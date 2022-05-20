@@ -1,0 +1,3 @@
+[submodule "ext/ramulator/Ramulator"]
+	path = ext/ramulator/Ramulator
+	url = https://gite.lirmm.fr/adac/ramulator-rowhammer.git

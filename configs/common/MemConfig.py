@@ -36,9 +36,19 @@
 import m5.objects
 from common import ObjectList
 from common import HMC
+import os
+
+def extract_dram_layout(file_path) :
+    array = []
+    if file_path is not None and os.path.exists(file_path):
+        with open(file_path, 'r') as f :
+            for line in f :
+                array.extend(list(map(int, line.split(',;'))))
+    return array
 
 def create_mem_intf(intf, r, i, nbr_mem_ctrls, intlv_bits, intlv_size,
-                    xor_low_bit):
+                    xor_low_bit, options):
+
     """
     Helper function for creating a single memoy controller from the given
     options.  This function is invoked multiple times in config_mem function
@@ -62,8 +72,51 @@ def create_mem_intf(intf, r, i, nbr_mem_ctrls, intlv_bits, intlv_size,
     # mapping and row-buffer size
     interface = intf()
 
+    if issubclass(intf, m5.objects.Ramulator):
+        if not options.ramulator_config:
+            fatal("--mem-type=ramulator require --ramulator-config option")
+        interface.ramulatorConfigFile = options.ramulator_config
+        interface.num_cpus = options.num_cpus
+        if options.rowhammer_enable :
+            layout_config = [] if options.dram_layout is None \
+                            else extract_dram_layout(options.dram_layout)
+
+            mitigation_cls = options.rowhammer_mitigation
+            if mitigation_cls is not None :
+                mitigation_cls = ObjectList.rh_mitigation_list.get(
+                    mitigation_cls)
+                if issubclass(mitigation_cls, m5.objects.PARA):
+                    mitigation = mitigation_cls(
+                        probability = options.rowhammer_para_probability
+                    )
+                elif issubclass(mitigation_cls, m5.objects.CBFBased):
+                    mitigation = mitigation_cls(
+                        nb_counters = options.rowhammer_cbf_nb_counters,
+                        counter_limit = options.rowhammer_cbf_count_limit,
+                        threshold = options.rowhammer_cbf_threshold,
+                        nb_hashes = options.rowhammer_cbf_nb_hashes,
+                        multipliers = options.rowhammer_cbf_multipliers,
+                        threshold_incr = options.rowhammer_cbf_threshold_incr,
+                        level = options.rowhammer_cbf_level
+                    )
+            else :
+                mitigation = m5.objects.NULL
+
+
+            interface.memoryCorruption = m5.objects.MemoryCorruption(
+                target_addrs = options.rowhammer_targets,
+                hammer_threshold = options.rowhammer_threshold,
+                enable_corruption = options.rowhammer_enable_corruption,
+                layout_config = layout_config,
+                flip_polynomial = tuple(float(x) for x in options.rowhammer_polynomial.split(',')),
+                mitigation = mitigation
+            )
+        else :
+            print("disable rowhammer")
+            interface.memoryCorruption = m5.objects.NULL
+
     # Only do this for DRAMs
-    if issubclass(intf, m5.objects.DRAMInterface):
+    elif issubclass(intf, m5.objects.DRAMInterface):
         # If the channel bits are appearing after the column
         # bits, we need to add the appropriate number of bits
         # for the row buffer size
@@ -200,7 +253,7 @@ def config_mem(options, system):
             if opt_mem_type and (not opt_nvm_type or range_iter % 2 != 0):
                 # Create the DRAM interface
                 dram_intf = create_mem_intf(intf, r, i, nbr_mem_ctrls,
-                    intlv_bits, intlv_size, opt_xor_low_bit)
+                    intlv_bits, intlv_size, opt_xor_low_bit, options)
 
                 # Set the number of ranks based on the command-line
                 # options if it was explicitly set
@@ -228,13 +281,16 @@ def config_mem(options, system):
                     mem_ctrl = m5.objects.SimpleMemory()
                 elif opt_mem_type == "QoSMemSinkInterface":
                     mem_ctrl = m5.objects.QoSMemSinkCtrl()
+                elif opt_mem_type == "Ramulator":
+                    mem_ctrl = dram_intf
                 else:
                     mem_ctrl = m5.objects.MemCtrl()
 
                 # Hookup the controller to the interface and add to the list
                 if opt_mem_type == "QoSMemSinkInterface":
                     mem_ctrl.interface = dram_intf
-                elif opt_mem_type != "SimpleMemory":
+                elif opt_mem_type != "SimpleMemory" and \
+                    opt_mem_type != "Ramulator":
                     mem_ctrl.dram = dram_intf
 
                 mem_ctrls.append(mem_ctrl)

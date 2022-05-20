@@ -1,0 +1,18 @@
+Import ('*')
+
+SimObject('MemoryCorruption.py')
+Source('memory_corruption.cc')
+
+SimObject('Mitigation.py')
+Source('mitigation.cc')
+
+SimObject('PARA.py')
+Source('para.cc')
+
+SimObject('CBFBased.py')
+Source('cbf_based.cc')
+
+DebugFlag('MemCorrupt')
+DebugFlag('MemCorruptDetails')
+DebugFlag('MemCorruptMitigation')
+DebugFlag('MemCorruptMitigationDetails')

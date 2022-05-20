@@ -167,6 +167,7 @@ indirect_bp_list = ObjectList(getattr(m5.objects, 'IndirectPredictor', None))
 mem_list = ObjectList(getattr(m5.objects, 'AbstractMemory', None))
 dram_addr_map_list = EnumList(getattr(m5.internal.params, 'enum_AddrMap',
                                       None))
+rh_mitigation_list = ObjectList(getattr(m5.objects, 'Mitigation', None))
 
 # Platform aliases. The platforms listed here might not be compiled,
 # we make sure they exist before we add them to the platform list.

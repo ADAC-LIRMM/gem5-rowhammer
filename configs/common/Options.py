@@ -113,7 +113,9 @@ def addNoISAOptions(parser):
                        help="Enable low-power states in DRAMInterface")
     parser.add_option("--mem-channels-intlv", type="int", default=0,
                       help="Memory channels interleave")
-
+    parser.add_option("--ramulator-config", type="string",
+                      dest="ramulator_config",
+                      help="Specify the Ramulator configuration file")
 
     parser.add_option("--memchecker", action="store_true")
 
@@ -490,3 +492,55 @@ def addFSOptions(parser):
     parser.add_option("--command-line-file", action="store",
                       default=None, type="string",
                       help="File with a template for the kernel command line")
+
+    # Debug option
+    parser.add_argument("--wait-gdb", default=False, action='store_true',
+                        help="Wait for remote GDB to connect.")
+
+def addRowhammerOptions(parser):
+
+    parser.add_option("--rowhammer-enable", action="store_true",
+                      default=False, dest="rowhammer_enable",
+                      help="Enable rowhammer effect analysis")
+    parser.add_option("--rowhammer-targets", nargs="+", type="int",
+                      default=[], dest="rowhammer_targets",
+                      help="Rowhammer victim address")
+    parser.add_option("--rowhammer-threshold", action="store", type="int",
+                      default=50000, dest="rowhammer_threshold",
+                      help="Access count for bit-flip of victim row")
+    parser.add_option("--rowhammer-enable-corruption", action="store_true",
+                      default=False, dest="rowhammer_enable_corruption",
+                      help="Enable host memory clear when RH threshold is met")
+    parser.add_option('--dram-layout', action="store", type="string",
+                      default=None, dest="dram_layout",
+                      help="DRAM row placement file for adjacency computation")
+    parser.add_option('--rowhammer-bit-flip-polynomial',
+                      default="1", type="str", dest="rowhammer_polynomial")
+
+    parser.add_option('--rowhammer-mitigation', type="choice", default=None,
+                      choices=ObjectList.rh_mitigation_list.get_names(),
+                      dest="rowhammer_mitigation")
+
+    parser.add_option('--rowhammer-para-probabilty', type="float",
+                      default="0.001", dest="rowhammer_para_probability")
+
+    parser.add_option('--rowhammer-cbf-nb-counters', type="int", default=1024,
+                      help="Number of counters in counting bloom filter")
+    parser.add_option('--rowhammer-cbf-count-limit', type="int", default=1<<16,
+                      help="Maximum value CBF counters can reach")
+    parser.add_option('--rowhammer-cbf-threshold', type="int", default=1<<14,
+                      help="Rowhammer detection threshold")
+    parser.add_option('--rowhammer-cbf-nb-hashes', type="int", default=3,
+                      help="number of counterss incremented when a row"
+                      " is activated")
+    parser.add_option('--rowhammer-cbf-multipliers', nargs="+", type="int",
+                      default=[],
+                      help="multipliers to apply to counters incrementation,"
+                      " one for each association made by the hash function")
+    parser.add_option('--rowhammer-cbf-threshold-incr', type="int", default=0,
+                      help="increment the threshold for detected aggressors"
+                      " after refreshing its neighbors, instead of substracting"
+                      " the threshold from the counters")
+    parser.add_option('--rowhammer-cbf-level', type="int", default=0,
+                      help="implementation level : 0 for Bank, 1 for Bank"
+                      " Group, 2 for Rank, 3 for Channel. Default: Bank level")
