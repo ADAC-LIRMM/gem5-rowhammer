@@ -35,3 +35,34 @@ images.
 If you have questions, please send mail to gem5-users@gem5.org
 
 Enjoy using gem5 and please share your modifications and extensions.
+
+# Use the Rowhammer simulation
+
+As of yet, the module can only be used with Ramulator and DDR4
+
+## using example files `fs.py` or `se.py`
+
+Use the following arguments to configure the memory corruption module:
+
+- `-rowhammer-enable`: 
+   Necessary to enable the module.
+
+- `--rowhammer-threshold=50000`:
+   The corruption threshold is the number of ACT needed on the neighbors of a victim row to corrupt it. If the threshold is e.g. 50000, then the sum of the activations in this row's neighbors must be at least 50000 for a corruption to happen. Default value is 50000.
+
+- `--rowhammer-enable-corruption`:
+   If set, the attack will affect the bits in the memory.
+   Otherwise, there will only be a message in the standard output.
+
+- `--dram-layout=path/to/file.csv`:
+   Used to change the organization of rows in the DRAM banks.
+   The file must be a csv file where the nth value is the placement of the nth logical row.
+   If the file contains `4,5,0,2,1,3`, then the logical row 0 will be placed at position 4, the row 1 position 5, etc. The logical row 0 have the rows 1 and 5 as its neighbors.
+   The remaining rows are placed at their original positions (row 6 at position 6, row 7 at position 7, etc.)
+
+- `--rowhammer-bit-flip-polynomial=0,0,3e-6,-2e-9`:
+   A polynomial law that defines the theoretical percentage of bits that are flipped after every ACT on a neighbor of a victim once the threshold is reached.
+   Default value is the constant 1.
+   E.g., if the polynomial is `0,0,3e-6,-2e-9` (-2e-9x^3 + 3e-6x^2), then after 200 ACTs passed the threshold, each bit has around 10.5% chance of being flipped. After 1000 ACTs passed the threshold, all bits are flipped.
+
+
