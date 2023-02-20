@@ -155,61 +155,66 @@ int MemoryCorruption::getMapKey(const std::vector<int>& addr_vec,
     return bank_id | (row & rowMask);
 }
 
-unsigned int MemoryCorruption::corrupt(unsigned int address,
-                               unsigned int length, double flip_probability,
+unsigned int MemoryCorruption::corrupt(Ramulator& ramulator, std::vector<int>& addr_vec,
+                               double flip_probability,
                                bool to1, unsigned int random_seed)
 {
-    srand(random_seed + address);
-    uint8_t *host_addr = this->_ramulator->toHostAddr(address);
-    unsigned int flipped;
-    if (flip_probability >= 1) {
-        uint8_t buffer[length];
-        memcpy(buffer, host_addr, length);
-        flipped = 0;
-        for (int i=0; i< length; i++) {
-            flipped += count_bits_char(buffer[i]);
-        }
-        if (to1) {
-            memset(host_addr, 0xFF, length);
-            flipped = length * 8 - flipped;
-        } else {
-            memset(host_addr, 0x00, length);
-        }
-    }
-    else if (flip_probability > 0) {
-        uint8_t buffer[length];
-        memcpy(buffer, host_addr, length);
-        flipped = 0;
-        const unsigned int rand_threshold =
-                (unsigned int) (flip_probability * RAND_MAX);
-        if (to1) {
-            for (int i=0; i<length; i++) {
-                for (int j=0; j<8; j++) {
-                    if (rand() < rand_threshold) {
-                        if ((buffer[i] & (1 << j)) == 0) {
+    static const unsigned int colLvl = ramulator.getColumnLevel();
+    static const unsigned int columns = 1 << ramulator.getLevelAddrBits(colLvl);
+    static const unsigned int txBits = ramulator.getTxBits();
+    int original_col = addr_vec[colLvl];
+    addr_vec[colLvl] = 0;
+    unsigned int flipped = 0;
+    int length = 1 << txBits;
+    for(int col = 0; col < columns; col++) {
+        addr_vec[colLvl] = col;
+        long addr = ramulator.vec_to_addr(addr_vec);
+        uint8_t *host_addr = this->_ramulator->toHostAddr(addr);
+        if (flip_probability >= 1) {
+            uint8_t buffer[length];
+            memcpy(buffer, host_addr, length);
+            int bits1 = 0;
+            for(int i=0; i < length; i++) {
+                bits1 += count_bits_char(buffer[i]);
+            }
+            if (to1) {
+                memset(host_addr, 0xFF, length);
+                flipped += length *8 - bits1;
+            } else {
+                memset(host_addr, 0x00, length);
+                flipped += bits1;
+            }
+        } else if (flip_probability > 0) {
+            uint8_t buffer[length];
+            memcpy(buffer, host_addr, length);
+            srand(random_seed + addr);
+            const unsigned int rand_threshold =
+                    (unsigned int) (flip_probability * RAND_MAX);
+            if (to1) {
+                for (int i=0; i<length; i++) {
+                    for (int j=0; j<8; j++) {
+                        if (rand() < rand_threshold &&
+                                (buffer[i] & (1 << j)) == 0) {
                             buffer[i] |= 1 << j;
                             flipped++;
                         }
                     }
                 }
-            }
-        } else {
-            for (int i=0; i<length; i++) {
-                for (int j=0; j<8; j++) {
-                    if (rand() < rand_threshold) {
-                        if ((buffer[i] & (1 << j)) != 0) {
+            } else {
+                for (int i=0; i<length; i++) {
+                    for (int j=0; j<8; j++) {
+                        if (rand() < rand_threshold &&
+                                (buffer[i] & (1 << j)) != 0) {
                             buffer[i] &= 0xFF - (1 << j);
                             flipped++;
                         }
                     }
                 }
             }
+            memcpy(host_addr, buffer, length);
         }
-        memcpy(host_addr, buffer, length);
     }
-    else {
-        flipped = 0;
-    }
+    addr_vec[colLvl] = original_col;
     if (flipped > 0)
         this->bitFlipsCount += flipped;
     return flipped;
@@ -251,11 +256,30 @@ void MemoryCorruption::onACT(Ramulator& ramulator,
                     DPRINTF(MemCorrupt, "reached hammer threshold for %08xh "
                             "[%d|%d|%d|%d|%d|%d]\n", addr,
                             vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+//TEST BEGIN
+                    const unsigned int colLvl = ramulator.getColumnLevel();
+                    const unsigned int columns = 1 << ramulator.getLevelAddrBits(colLvl);
+                    const unsigned int txBits = ramulator.getTxBits();
+
+                    int original_col = vec[colLvl];
+                    vec[colLvl] = 0;
+                    unsigned int flipped = 0;
+                    int length = 1 << txBits;
+                    for(int col = 0; col < columns; col++) {
+                        vec[colLvl] = col;
+                        long addr = ramulator.vec_to_addr(vec);
+                        uint8_t *host_addr = this->_ramulator->toHostAddr(addr);
+
+                        for(int i=0; i < length; i++) {
+                            printf("%d,", host_addr[i]);
+                        }
+                    }
+                    printf("\n");
+                    vec[colLvl] = original_col;
+//TEST END
                 }
 
                 if (_enable_corruption) {
-                    const int row_size = 1<<(ramulator.getTxBits()
-                            + ramulator.getLevelAddrBits(colLvl));
 
                     double probability = this->_flip_polynomial[0];
                     if (this->_flip_polynomial.size() > 1) {
@@ -266,13 +290,13 @@ void MemoryCorruption::onACT(Ramulator& ramulator,
                             x *= x;
                         }
                     }
-                    const int nb_flipped = this->corrupt(addr, row_size,
+                    const int nb_flipped = this->corrupt(ramulator, vec,
                                                         probability, false, 0);
 
                     if (nb_flipped > 0)
-                        DPRINTF(MemCorrupt, "flipped %d bits @ %08xh "
+                        DPRINTF(MemCorrupt, "flipped %d bits/(2^(%d+%d)*8) @ %08xh "
                                 "[%d|%d|%d|%d|%d|%d] (hammered %d times)\n",
-                                nb_flipped, addr, vec[0], vec[1], vec[2],
+                                nb_flipped, ramulator.getTxBits(), ramulator.getLevelAddrBits(colLvl), addr, vec[0], vec[1], vec[2],
                                 vec[3], vec[4], vec[5],
                                 this->_row_counters[neighbor_keys[i]]);
                     ((void)nb_flipped);

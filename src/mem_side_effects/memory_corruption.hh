@@ -37,9 +37,9 @@ private:
                   int neighbor_rows[2],
                   int neighbor_keys[2]);
 
-    unsigned int corrupt(unsigned int address,
-                 unsigned int length, double flip_probability,
-                 bool to1, unsigned int random_seed);
+    unsigned int corrupt(Ramulator& ramulator, std::vector<int>& addr_vec,
+                         double flip_probability, bool to1,
+                         unsigned int random_seed);
 public:
     MemoryCorruption(const MemoryCorruptionParams &p);
     void init(Ramulator& ramulator);
