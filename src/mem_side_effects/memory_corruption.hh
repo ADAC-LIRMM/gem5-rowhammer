@@ -19,15 +19,12 @@ class MemoryCorruption : public SimObject
 {
 private:
 
-#if ALL_MEM
     std::unordered_map<unsigned int, unsigned int> _row_counters;
-#else
-    std::vector<unsigned int> _target_addrs;
-    std::vector<unsigned int> _target_ACT_counter;
-#endif
+
     unsigned long int _hammer_threshold;
     unsigned long int _refresh_count_down;
     bool _enable_corruption;
+    unsigned int _rand_seed;
     std::vector<unsigned int> _layout_config;
     std::vector<double> _flip_polynomial;
     Ramulator* _ramulator;
@@ -38,8 +35,7 @@ private:
                   int neighbor_keys[2]);
 
     unsigned int corrupt(Ramulator& ramulator, std::vector<int>& addr_vec,
-                         double flip_probability, bool to1,
-                         unsigned int random_seed);
+                         double flip_probability, bool to1);
 public:
     MemoryCorruption(const MemoryCorruptionParams &p);
     void init(Ramulator& ramulator);

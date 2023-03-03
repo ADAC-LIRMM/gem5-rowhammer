@@ -104,8 +104,8 @@ def create_mem_intf(intf, r, i, nbr_mem_ctrls, intlv_bits, intlv_size,
 
 
             interface.memoryCorruption = m5.objects.MemoryCorruption(
-                target_addrs = options.rowhammer_targets,
                 hammer_threshold = options.rowhammer_threshold,
+                rand_seed = options.rowhammer_rand_seed,
                 enable_corruption = options.rowhammer_enable_corruption,
                 layout_config = layout_config,
                 flip_polynomial = tuple(float(x) for x in options.rowhammer_polynomial.split(',')),

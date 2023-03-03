@@ -43,6 +43,8 @@ from m5.objects import *
 from common.Benchmarks import *
 from common import ObjectList
 
+from random import random
+
 vio_9p_help = """\
 Enable the Virtio 9P device and set the path to share. The default 9p path is
 m5ou5/9p/share, and it can be changed by setting VirtIO9p.root with --param. A
@@ -502,12 +504,12 @@ def addRowhammerOptions(parser):
     parser.add_option("--rowhammer-enable", action="store_true",
                       default=False, dest="rowhammer_enable",
                       help="Enable rowhammer effect analysis")
-    parser.add_option("--rowhammer-targets", nargs="+", type="int",
-                      default=[], dest="rowhammer_targets",
-                      help="Rowhammer victim address")
     parser.add_option("--rowhammer-threshold", action="store", type="int",
                       default=50000, dest="rowhammer_threshold",
                       help="Access count for bit-flip of victim row")
+    parser.add_option("--rowhammer-rand-seed", action="store", type="int",
+                      default=random()*(2**31), dest="rowhammer_rand_seed",
+                      help="random seed for memory corruption")
     parser.add_option("--rowhammer-enable-corruption", action="store_true",
                       default=False, dest="rowhammer_enable_corruption",
                       help="Enable host memory clear when RH threshold is met")
