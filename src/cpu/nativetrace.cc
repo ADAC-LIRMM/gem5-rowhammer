@@ -33,7 +33,10 @@
 #include "debug/GDBMisc.hh"
 #include "params/NativeTrace.hh"
 
-namespace Trace {
+namespace gem5
+{
+
+namespace trace {
 
 NativeTrace::NativeTrace(const Params &p)
     : ExeTracer(p)
@@ -52,7 +55,7 @@ NativeTrace::NativeTrace(const Params &p)
 }
 
 void
-Trace::NativeTraceRecord::dump()
+NativeTraceRecord::dump()
 {
     //Don't print what happens for each micro-op, just print out
     //once at the last op, and for regular instructions.
@@ -60,4 +63,5 @@ Trace::NativeTraceRecord::dump()
         parent->check(this);
 }
 
-} // namespace Trace
+} // namespace trace
+} // namespace gem5

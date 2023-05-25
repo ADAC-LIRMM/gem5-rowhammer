@@ -37,7 +37,8 @@
 
 #include "dev/riscv/plic_device.hh"
 
-using namespace RiscvISA;
+namespace gem5
+{
 
 PlicIntDevice::PlicIntDevice(const Params &params) :
     BasicPioDevice(params, params.pio_size),
@@ -46,3 +47,5 @@ PlicIntDevice::PlicIntDevice(const Params &params) :
     _interruptID(params.interrupt_id)
 {
 }
+
+} // namespace gem5

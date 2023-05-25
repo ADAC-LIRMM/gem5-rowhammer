@@ -42,6 +42,9 @@
 #include "arch/arm/insts/pred_inst.hh"
 #include "arch/arm/insts/static_inst.hh"
 
+namespace gem5
+{
+
 namespace ArmISAInst {
 
 class MicroTmeOp : public ArmISA::MicroOp
@@ -62,7 +65,7 @@ class MicroTmeBasic64 : public MicroTmeOp
     {}
 
     std::string generateDisassembly(Addr pc,
-                                    const Loader::SymbolTable *symtab) const;
+                                    const loader::SymbolTable *symtab) const;
 };
 
 class TmeImmOp64 : public ArmISA::ArmStaticInst
@@ -77,22 +80,22 @@ class TmeImmOp64 : public ArmISA::ArmStaticInst
     {}
 
     std::string generateDisassembly(Addr pc,
-                                    const Loader::SymbolTable *symtab) const;
+                                    const loader::SymbolTable *symtab) const;
 };
 
 class TmeRegNone64 : public ArmISA::ArmStaticInst
 {
   protected:
-    ArmISA::IntRegIndex dest;
+    RegIndex dest;
 
     TmeRegNone64(const char *mnem, ArmISA::ExtMachInst machInst,
-                 OpClass __opClass, ArmISA::IntRegIndex _dest)
+                 OpClass __opClass, RegIndex _dest)
       : ArmISA::ArmStaticInst(mnem, machInst, __opClass),
         dest(_dest)
     {}
 
     std::string generateDisassembly(Addr pc,
-                                    const Loader::SymbolTable *symtab) const;
+                                    const loader::SymbolTable *symtab) const;
 };
 
 class Tstart64 : public TmeRegNone64
@@ -101,11 +104,11 @@ class Tstart64 : public TmeRegNone64
     RegId destRegIdxArr[1];
 
   public:
-    Tstart64(ArmISA::ExtMachInst, ArmISA::IntRegIndex);
+    Tstart64(ArmISA::ExtMachInst, RegIndex);
 
-    Fault execute(ExecContext *, Trace::InstRecord *) const;
-    Fault initiateAcc(ExecContext *, Trace::InstRecord *) const;
-    Fault completeAcc(PacketPtr, ExecContext *, Trace::InstRecord *) const;
+    Fault execute(ExecContext *, trace::InstRecord *) const;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const;
+    Fault completeAcc(PacketPtr, ExecContext *, trace::InstRecord *) const;
 };
 
 class Ttest64 : public TmeRegNone64
@@ -114,9 +117,9 @@ class Ttest64 : public TmeRegNone64
     RegId destRegIdxArr[1];
 
   public:
-    Ttest64(ArmISA::ExtMachInst, ArmISA::IntRegIndex);
+    Ttest64(ArmISA::ExtMachInst, RegIndex);
 
-    Fault execute(ExecContext *, Trace::InstRecord *) const;
+    Fault execute(ExecContext *, trace::InstRecord *) const;
 };
 
 class Tcancel64 : public TmeImmOp64
@@ -124,9 +127,9 @@ class Tcancel64 : public TmeImmOp64
   public:
     Tcancel64(ArmISA::ExtMachInst, uint64_t);
 
-    Fault execute(ExecContext *, Trace::InstRecord *) const;
-    Fault initiateAcc(ExecContext *, Trace::InstRecord *) const;
-    Fault completeAcc(PacketPtr, ExecContext *, Trace::InstRecord *) const;
+    Fault execute(ExecContext *, trace::InstRecord *) const;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const;
+    Fault completeAcc(PacketPtr, ExecContext *, trace::InstRecord *) const;
 };
 
 class MicroTfence64 : public MicroTmeBasic64
@@ -134,9 +137,9 @@ class MicroTfence64 : public MicroTmeBasic64
   public:
     MicroTfence64(ArmISA::ExtMachInst);
 
-    Fault execute(ExecContext *, Trace::InstRecord *) const;
-    Fault initiateAcc(ExecContext *, Trace::InstRecord *) const;
-    Fault completeAcc(PacketPtr, ExecContext *, Trace::InstRecord *) const;
+    Fault execute(ExecContext *, trace::InstRecord *) const;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const;
+    Fault completeAcc(PacketPtr, ExecContext *, trace::InstRecord *) const;
 };
 
 class MicroTcommit64 : public MicroTmeBasic64
@@ -144,9 +147,9 @@ class MicroTcommit64 : public MicroTmeBasic64
   public:
     MicroTcommit64(ArmISA::ExtMachInst);
 
-    Fault execute(ExecContext *, Trace::InstRecord *) const;
-    Fault initiateAcc(ExecContext *, Trace::InstRecord *) const;
-    Fault completeAcc(PacketPtr, ExecContext *, Trace::InstRecord *) const;
+    Fault execute(ExecContext *, trace::InstRecord *) const;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const;
+    Fault completeAcc(PacketPtr, ExecContext *, trace::InstRecord *) const;
 };
 
 
@@ -163,6 +166,7 @@ class Tcommit64 : public MacroTmeOp
     Tcommit64(ArmISA::ExtMachInst _machInst);
 };
 
-} // namespace
+} // namespace ArmISAInst
+} // namespace gem5
 
 #endif

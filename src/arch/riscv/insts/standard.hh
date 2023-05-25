@@ -35,8 +35,12 @@
 
 #include "arch/riscv/insts/bitfields.hh"
 #include "arch/riscv/insts/static_inst.hh"
+#include "arch/riscv/regs/misc.hh"
 #include "cpu/exec_context.hh"
 #include "cpu/static_inst.hh"
+
+namespace gem5
+{
 
 namespace RiscvISA
 {
@@ -50,7 +54,7 @@ class RegOp : public RiscvStaticInst
     using RiscvStaticInst::RiscvStaticInst;
 
     std::string generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const override;
+        Addr pc, const loader::SymbolTable *symtab) const override;
 };
 
 /**
@@ -76,7 +80,7 @@ class SystemOp : public RiscvStaticInst
     using RiscvStaticInst::RiscvStaticInst;
 
     std::string generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const override;
+        Addr pc, const loader::SymbolTable *symtab) const override;
 };
 
 /**
@@ -99,9 +103,10 @@ class CSROp : public RiscvStaticInst
     }
 
     std::string generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const override;
+        Addr pc, const loader::SymbolTable *symtab) const override;
 };
 
-}
+} // namespace RiscvISA
+} // namespace gem5
 
 #endif // __ARCH_RISCV_STANDARD_INST_HH__

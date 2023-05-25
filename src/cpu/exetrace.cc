@@ -43,9 +43,7 @@
 #include <iomanip>
 #include <sstream>
 
-#include "arch/utility.hh"
 #include "base/loader/symtab.hh"
-#include "config/the_isa.hh"
 #include "cpu/base.hh"
 #include "cpu/static_inst.hh"
 #include "cpu/thread_context.hh"
@@ -53,33 +51,36 @@
 #include "debug/FmtTicksOff.hh"
 #include "enums/OpClass.hh"
 
-namespace Trace {
+namespace gem5
+{
+
+namespace trace {
 
 void
-Trace::ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
+ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
 {
     std::stringstream outs;
 
     const bool in_user_mode = thread->getIsaPtr()->inUserMode();
-    if (in_user_mode && !Debug::ExecUser)
+    if (in_user_mode && !debug::ExecUser)
         return;
-    if (!in_user_mode && !Debug::ExecKernel)
+    if (!in_user_mode && !debug::ExecKernel)
         return;
 
-    if (Debug::ExecAsid) {
+    if (debug::ExecAsid) {
         outs << "A" << std::dec <<
             thread->getIsaPtr()->getExecutingAsid() << " ";
     }
 
-    if (Debug::ExecThread)
+    if (debug::ExecThread)
         outs << "T" << thread->threadId() << " : ";
 
-    Addr cur_pc = pc.instAddr();
-    Loader::SymbolTable::const_iterator it;
+    Addr cur_pc = pc->instAddr();
+    loader::SymbolTable::const_iterator it;
     ccprintf(outs, "%#x", cur_pc);
-    if (Debug::ExecSymbol && (!FullSystem || !in_user_mode) &&
-            (it = Loader::debugSymbolTable.findNearest(cur_pc)) !=
-                Loader::debugSymbolTable.end()) {
+    if (debug::ExecSymbol && (!FullSystem || !in_user_mode) &&
+            (it = loader::debugSymbolTable.findNearest(cur_pc)) !=
+                loader::debugSymbolTable.end()) {
         Addr delta = cur_pc - it->address;
         if (delta)
             ccprintf(outs, " @%s+%d", it->name, delta);
@@ -88,7 +89,7 @@ Trace::ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
     }
 
     if (inst->isMicroop()) {
-        ccprintf(outs, ".%2d", pc.microPC());
+        ccprintf(outs, ".%2d", pc->microPC());
     } else {
         ccprintf(outs, "   ");
     }
@@ -100,64 +101,36 @@ Trace::ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
     //
 
     outs << std::setw(26) << std::left;
-    outs << inst->disassemble(cur_pc, &Loader::debugSymbolTable);
+    outs << inst->disassemble(cur_pc, &loader::debugSymbolTable);
 
     if (ran) {
         outs << " : ";
 
-        if (Debug::ExecOpClass) {
-            outs << Enums::OpClassStrings[inst->opClass()] << " : ";
+        if (debug::ExecOpClass) {
+            outs << enums::OpClassStrings[inst->opClass()] << " : ";
         }
 
-        if (Debug::ExecResult && !predicate) {
+        if (debug::ExecResult && !predicate) {
             outs << "Predicated False";
         }
 
-        if (Debug::ExecResult && data_status != DataInvalid) {
-            switch (data_status) {
-              case DataVec:
-                {
-                    ccprintf(outs, " D=0x[");
-                    auto dv = data.as_vec->as<uint32_t>();
-                    for (int i = TheISA::VecRegSizeBytes / 4 - 1; i >= 0;
-                         i--) {
-                        ccprintf(outs, "%08x", dv[i]);
-                        if (i != 0) {
-                            ccprintf(outs, "_");
-                        }
-                    }
-                    ccprintf(outs, "]");
-                }
-                break;
-              case DataVecPred:
-                {
-                    ccprintf(outs, " D=0b[");
-                    auto pv = data.as_pred->as<uint8_t>();
-                    for (int i = TheISA::VecPredRegSizeBits - 1; i >= 0; i--) {
-                        ccprintf(outs, pv[i] ? "1" : "0");
-                        if (i != 0 && i % 4 == 0) {
-                            ccprintf(outs, "_");
-                        }
-                    }
-                    ccprintf(outs, "]");
-                }
-                break;
-              default:
-                ccprintf(outs, " D=%#018x", data.as_int);
-                break;
-            }
+        if (debug::ExecResult && dataStatus != DataInvalid) {
+            if (dataStatus == DataReg)
+                ccprintf(outs, " D=%s", data.asReg.asString());
+            else
+                ccprintf(outs, " D=%#018x", data.asInt);
         }
 
-        if (Debug::ExecEffAddr && getMemValid())
+        if (debug::ExecEffAddr && getMemValid())
             outs << " A=0x" << std::hex << addr;
 
-        if (Debug::ExecFetchSeq && fetch_seq_valid)
+        if (debug::ExecFetchSeq && fetch_seq_valid)
             outs << "  FetchSeq=" << std::dec << fetch_seq;
 
-        if (Debug::ExecCPSeq && cp_seq_valid)
+        if (debug::ExecCPSeq && cp_seq_valid)
             outs << "  CPSeq=" << std::dec << cp_seq;
 
-        if (Debug::ExecFlags) {
+        if (debug::ExecFlags) {
             outs << "  flags=(";
             inst->printFlags(outs, "|");
             outs << ")";
@@ -169,13 +142,13 @@ Trace::ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
     //
     outs << std::endl;
 
-    Trace::getDebugLogger()->dprintf_flag(
+    trace::getDebugLogger()->dprintf_flag(
         when, thread->getCpuPtr()->name(), "ExecEnable", "%s",
         outs.str().c_str());
 }
 
 void
-Trace::ExeTracerRecord::dump()
+ExeTracerRecord::dump()
 {
     /*
      * The behavior this check tries to achieve is that if ExecMacro is on,
@@ -185,16 +158,17 @@ Trace::ExeTracerRecord::dump()
      * finishes. Macroops then behave like regular instructions and don't
      * complete/print when they fault.
      */
-    if (Debug::ExecMacro && staticInst->isMicroop() &&
-        ((Debug::ExecMicro &&
+    if (debug::ExecMacro && staticInst->isMicroop() &&
+        ((debug::ExecMicro &&
             macroStaticInst && staticInst->isFirstMicroop()) ||
-            (!Debug::ExecMicro &&
+            (!debug::ExecMicro &&
              macroStaticInst && staticInst->isLastMicroop()))) {
         traceInst(macroStaticInst, false);
     }
-    if (Debug::ExecMicro || !staticInst->isMicroop()) {
+    if (debug::ExecMicro || !staticInst->isMicroop()) {
         traceInst(staticInst, true);
     }
 }
 
-} // namespace Trace
+} // namespace trace
+} // namespace gem5

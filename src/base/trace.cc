@@ -45,14 +45,18 @@
 #include "debug/FmtTicksOff.hh"
 #include "sim/backtrace.hh"
 
-const std::string &name()
+const std::string &
+name()
 {
     static const std::string default_name("global");
 
     return default_name;
 }
 
-namespace Trace
+namespace gem5
+{
+
+namespace trace
 {
 
 // This variable holds the output logger for debug information.  Other
@@ -89,13 +93,13 @@ setDebugLogger(Logger *logger)
 void
 enable()
 {
-    Debug::Flag::globalEnable();
+    debug::Flag::globalEnable();
 }
 
 void
 disable()
 {
-    Debug::Flag::globalDisable();
+    debug::Flag::globalDisable();
 }
 
 ObjectMatch ignore;
@@ -148,10 +152,10 @@ OstreamLogger::logMessage(Tick when, const std::string &name,
     if (!name.empty() && ignore.match(name))
         return;
 
-    if (!DTRACE(FmtTicksOff) && (when != MaxTick))
+    if (!debug::FmtTicksOff && (when != MaxTick))
         ccprintf(stream, "%7d: ", when);
 
-    if (DTRACE(FmtFlag) && !flag.empty())
+    if (debug::FmtFlag && !flag.empty())
         stream << flag << ": ";
 
     if (!name.empty())
@@ -160,10 +164,11 @@ OstreamLogger::logMessage(Tick when, const std::string &name,
     stream << message;
     stream.flush();
 
-    if (DTRACE(FmtStackTrace)) {
+    if (debug::FmtStackTrace) {
         print_backtrace();
         STATIC_ERR("\n");
     }
 }
 
-} // namespace Trace
+} // namespace trace
+} // namespace gem5

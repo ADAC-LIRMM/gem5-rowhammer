@@ -2,8 +2,6 @@
  * Copyright (c) 2014-2015 Advanced Micro Devices, Inc.
  * All rights reserved.
  *
- * For use for simulation and test purposes only
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
@@ -45,6 +43,9 @@
 #include "mem/port.hh"
 #include "params/LdsState.hh"
 #include "sim/clocked_object.hh"
+
+namespace gem5
+{
 
 class ComputeUnit;
 
@@ -98,6 +99,27 @@ class LdsChunk
 
         T *p0 = (T *) (&(chunk.at(index)));
         *p0 = value;
+    }
+
+    /**
+     * an atomic operation
+     */
+    template<class T>
+    T
+    atomic(const uint32_t index, AtomicOpFunctorPtr amoOp)
+    {
+        /**
+         * Atomics that are outside the bounds of the LDS
+         * chunk allocated to this WG are dropped.
+         */
+        if (index >= chunk.size()) {
+            return (T)0;
+        }
+        T *p0 = (T *) (&(chunk.at(index)));
+        T tmp = *p0;
+
+       (*amoOp)((uint8_t *)p0);
+        return tmp;
     }
 
     /**
@@ -528,5 +550,7 @@ class LdsState: public ClockedObject
     // the number of banks in the LDS underlying data store
     int banks = 0;
 };
+
+} // namespace gem5
 
 #endif // __LDS_STATE_HH__

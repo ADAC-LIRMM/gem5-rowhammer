@@ -51,7 +51,7 @@ output header {{
         }
 
         std::string generateDisassembly(
-                Addr pc, const Loader::SymbolTable *symtab) const override;
+                Addr pc, const loader::SymbolTable *symtab) const override;
     };
 
      /**
@@ -64,7 +64,7 @@ output header {{
         using Memory::Memory;
 
         std::string generateDisassembly(
-                Addr pc, const Loader::SymbolTable *symtab) const override;
+                Addr pc, const loader::SymbolTable *symtab) const override;
     };
 }};
 
@@ -72,7 +72,7 @@ output header {{
 output decoder {{
     std::string
     Memory::generateDisassembly(
-            Addr pc, const Loader::SymbolTable *symtab) const
+            Addr pc, const loader::SymbolTable *symtab) const
     {
         return csprintf("%-10s %c%d, %d(r%d)", mnemonic,
                         flags[IsFloating] ? 'f' : 'r', RT, disp, RS);
@@ -80,7 +80,7 @@ output decoder {{
 
     std::string
     MemoryNoDisp::generateDisassembly(
-            Addr pc, const Loader::SymbolTable *symtab) const
+            Addr pc, const loader::SymbolTable *symtab) const
     {
         return csprintf("%-10s %c%d, r%d(r%d)", mnemonic,
                         flags[IsFloating] ? 'f' : 'r',
@@ -136,10 +136,10 @@ def template LoadStoreDeclare {{
         /// Constructor.
         %(class_name)s(ExtMachInst machInst);
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(Packet *, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
     };
 }};
 
@@ -155,7 +155,7 @@ def template LoadStoreConstructor {{
 
 def template LoadExecute {{
     Fault %(class_name)s::execute(ExecContext *xc,
-                                  Trace::InstRecord *traceData) const
+                                  trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
@@ -187,7 +187,7 @@ def template LoadExecute {{
 
 def template LoadInitiateAcc {{
     Fault %(class_name)s::initiateAcc(ExecContext *xc,
-                                      Trace::InstRecord *traceData) const
+                                      trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
@@ -213,7 +213,7 @@ def template LoadInitiateAcc {{
 
 def template LoadCompleteAcc {{
     Fault %(class_name)s::completeAcc(Packet *pkt, ExecContext *xc,
-                                      Trace::InstRecord *traceData) const
+                                      trace::InstRecord *traceData) const
     {
         Fault fault = NoFault;
 
@@ -243,7 +243,7 @@ def template LoadCompleteAcc {{
 
 def template StoreExecute {{
     Fault %(class_name)s::execute(ExecContext *xc,
-                                  Trace::InstRecord *traceData) const
+                                  trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
@@ -277,7 +277,7 @@ def template StoreExecute {{
 
 def template StoreFPExecute {{
     Fault %(class_name)s::execute(ExecContext *xc,
-                                  Trace::InstRecord *traceData) const
+                                  trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
@@ -312,7 +312,7 @@ def template StoreFPExecute {{
 
 def template StoreCondExecute {{
     Fault %(class_name)s::execute(ExecContext *xc,
-                                  Trace::InstRecord *traceData) const
+                                  trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
@@ -346,7 +346,7 @@ def template StoreCondExecute {{
 
 def template StoreInitiateAcc {{
     Fault %(class_name)s::initiateAcc(ExecContext *xc,
-                                      Trace::InstRecord *traceData) const
+                                      trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
@@ -373,7 +373,7 @@ def template StoreInitiateAcc {{
 def template StoreCompleteAcc {{
     Fault %(class_name)s::completeAcc(Packet *pkt,
                                       ExecContext *xc,
-                                      Trace::InstRecord *traceData) const
+                                      trace::InstRecord *traceData) const
     {
         return NoFault;
     }
@@ -382,7 +382,7 @@ def template StoreCompleteAcc {{
 def template StoreCondCompleteAcc {{
     Fault %(class_name)s::completeAcc(Packet *pkt,
                                       ExecContext *xc,
-                                      Trace::InstRecord *traceData) const
+                                      trace::InstRecord *traceData) const
     {
         Fault fault = NoFault;
 
@@ -405,9 +405,9 @@ def template StoreCondCompleteAcc {{
 
 def template MiscExecute {{
     Fault %(class_name)s::execute(ExecContext *xc,
-                                  Trace::InstRecord *traceData) const
+                                  trace::InstRecord *traceData) const
     {
-        M5_VAR_USED Addr EA = 0;
+        [[maybe_unused]] Addr EA = 0;
         Fault fault = NoFault;
 
         %(fp_enable_check)s;
@@ -425,7 +425,7 @@ def template MiscExecute {{
 
 def template MiscInitiateAcc {{
     Fault %(class_name)s::initiateAcc(ExecContext *xc,
-                                      Trace::InstRecord *traceData) const
+                                      trace::InstRecord *traceData) const
     {
         panic("Misc instruction does not support split access method!");
         return NoFault;
@@ -435,7 +435,7 @@ def template MiscInitiateAcc {{
 
 def template MiscCompleteAcc {{
     Fault %(class_name)s::completeAcc(Packet *pkt, ExecContext *xc,
-                                      Trace::InstRecord *traceData) const
+                                      trace::InstRecord *traceData) const
     {
         panic("Misc instruction does not support split access method!");
 
@@ -498,8 +498,6 @@ def format LoadUnalignedMemory(memacc_code, ea_code = {{ EA = (Rs + disp) & ~3; 
         uint32_t mem_word = Mem_uw;
         uint32_t unalign_addr = Rs + disp;
         uint32_t byte_offset = unalign_addr & 3;
-        if (GuestByteOrder == ByteOrder::big)
-            byte_offset ^= 3;
     '''
 
     memacc_code = decl_code + memacc_code
@@ -516,8 +514,6 @@ def format StoreUnalignedMemory(memacc_code, ea_code = {{ EA = (Rs + disp) & ~3;
         uint32_t mem_word = 0;
         uint32_t unaligned_addr = Rs + disp;
         uint32_t byte_offset = unaligned_addr & 3;
-        if (GuestByteOrder == ByteOrder::big)
-            byte_offset ^= 3;
         fault = readMemAtomicLE(xc, traceData, EA, mem_word, memAccessFlags);
     '''
     memacc_code = decl_code + memacc_code + '\nMem = mem_word;\n'

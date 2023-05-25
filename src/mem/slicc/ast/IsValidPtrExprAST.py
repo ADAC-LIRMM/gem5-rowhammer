@@ -29,9 +29,10 @@
 from slicc.ast.ExprAST import ExprAST
 from slicc.symbols import Type
 
+
 class IsValidPtrExprAST(ExprAST):
     def __init__(self, slicc, variable, flag):
-        super(IsValidPtrExprAST, self).__init__(slicc)
+        super().__init__(slicc)
         self.variable = variable
         self.flag = flag
 
@@ -42,7 +43,7 @@ class IsValidPtrExprAST(ExprAST):
         # Make sure the variable is valid
         fix = code.nofix()
         code("(")
-        var_type, var_code = self.variable.inline(True);
+        var_type, var_code = self.variable.inline(True)
         if self.flag:
             code("${var_code} != NULL)")
         else:

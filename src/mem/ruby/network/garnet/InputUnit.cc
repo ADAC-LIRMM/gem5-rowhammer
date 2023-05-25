@@ -35,6 +35,15 @@
 #include "mem/ruby/network/garnet/Credit.hh"
 #include "mem/ruby/network/garnet/Router.hh"
 
+namespace gem5
+{
+
+namespace ruby
+{
+
+namespace garnet
+{
+
 InputUnit::InputUnit(int id, PortDirection direction, Router *router)
   : Consumer(router), m_router(router), m_id(id), m_direction(direction),
     m_vc_per_vnet(m_router->get_vc_per_vnet())
@@ -142,6 +151,17 @@ InputUnit::increment_credit(int in_vc, bool free_signal, Tick curTime)
     m_credit_link->scheduleEventAbsolute(m_router->clockEdge(Cycles(1)));
 }
 
+bool
+InputUnit::functionalRead(Packet *pkt, WriteMask &mask)
+{
+    bool read = false;
+    for (auto& virtual_channel : virtualChannels) {
+        if (virtual_channel.functionalRead(pkt, mask))
+            read = true;
+    }
+
+    return read;
+}
 
 uint32_t
 InputUnit::functionalWrite(Packet *pkt)
@@ -162,3 +182,7 @@ InputUnit::resetStats()
         m_num_buffer_writes[j] = 0;
     }
 }
+
+} // namespace garnet
+} // namespace ruby
+} // namespace gem5

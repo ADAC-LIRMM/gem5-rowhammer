@@ -167,7 +167,7 @@ scons x86.CROSS_COMPILE=x86_64-linux-gnu- build/x86/out/m5
  thumb   | arm       | arm-linux-gnueabihf-
  sparc   | sparc64   | sparc64-linux-gnu-
  x86     | x86_64    |
- riscv   | riscv64   | riscv64-linux-gnu-
+ riscv   | riscv64   | riscv64-unknown-linux-gnu-
 
 Note that the default setting for the x86 cross compiler prefix is blank,
 meaning that the native/host compiler will be used. If building on a non-x86
@@ -410,5 +410,3 @@ subtley broken, when used to target a different ABI. To build these objects
 correctly, we would need to use a proper cross build environment for their
 corresponding languages. Something like this could likely be set up using a
 tool like buildroot.
-
-

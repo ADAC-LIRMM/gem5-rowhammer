@@ -30,18 +30,20 @@
 
 #include <iomanip>
 
-#include "config/the_isa.hh"
 #include "cpu/exetrace.hh"
 #include "cpu/static_inst.hh"
 
-namespace Trace {
+namespace gem5
+{
+
+namespace trace {
 
 void
-Trace::IntelTraceRecord::dump()
+IntelTraceRecord::dump()
 {
-    std::ostream &outs = Trace::output();
+    std::ostream &outs = trace::output();
     ccprintf(outs, "%7d ) ", when);
-    outs << "0x" << std::hex << pc.instAddr() << ":\t";
+    outs << "0x" << std::hex << pc->instAddr() << ":\t";
     if (staticInst->isLoad()) {
         ccprintf(outs, "<RD %#x>", addr);
     } else if (staticInst->isStore()) {
@@ -50,4 +52,5 @@ Trace::IntelTraceRecord::dump()
     outs << std::endl;
 }
 
-} // namespace Trace
+} // namespace trace
+} // namespace gem5

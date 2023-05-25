@@ -135,23 +135,28 @@
 
 #include <string>
 
+#include "arch/riscv/gdb-xml/gdb_xml_riscv_cpu.hh"
+#include "arch/riscv/gdb-xml/gdb_xml_riscv_csr.hh"
+#include "arch/riscv/gdb-xml/gdb_xml_riscv_fpu.hh"
+#include "arch/riscv/gdb-xml/gdb_xml_riscv_target.hh"
 #include "arch/riscv/mmu.hh"
 #include "arch/riscv/pagetable_walker.hh"
-#include "arch/riscv/registers.hh"
+#include "arch/riscv/regs/float.hh"
+#include "arch/riscv/regs/int.hh"
+#include "arch/riscv/regs/misc.hh"
 #include "arch/riscv/tlb.hh"
-#include "blobs/gdb_xml_riscv_cpu.hh"
-#include "blobs/gdb_xml_riscv_csr.hh"
-#include "blobs/gdb_xml_riscv_fpu.hh"
-#include "blobs/gdb_xml_riscv_target.hh"
 #include "cpu/thread_state.hh"
 #include "debug/GDBAcc.hh"
 #include "mem/page_table.hh"
 #include "sim/full_system.hh"
 
+namespace gem5
+{
+
 using namespace RiscvISA;
 
-RemoteGDB::RemoteGDB(System *_system, ThreadContext *tc, int _port)
-    : BaseRemoteGDB(_system, tc, _port), regCache(this)
+RemoteGDB::RemoteGDB(System *_system, int _port)
+    : BaseRemoteGDB(_system, _port), regCache(this)
 {
 }
 
@@ -164,13 +169,13 @@ RemoteGDB::acc(Addr va, size_t len)
         unsigned logBytes;
         Addr paddr = va;
 
-        PrivilegeMode pmode = mmu->getMemPriv(context(), BaseTLB::Read);
+        PrivilegeMode pmode = mmu->getMemPriv(context(), BaseMMU::Read);
         SATP satp = context()->readMiscReg(MISCREG_SATP);
         if (pmode != PrivilegeMode::PRV_M &&
             satp.mode != AddrXlateMode::BARE) {
             Walker *walker = mmu->getDataWalker();
             Fault fault = walker->startFunctional(
-                context(), paddr, logBytes, BaseTLB::Read);
+                context(), paddr, logBytes, BaseMMU::Read);
             if (fault != NoFault)
                 return false;
         }
@@ -186,15 +191,14 @@ RemoteGDB::RiscvGdbRegCache::getRegs(ThreadContext *context)
     DPRINTF(GDBAcc, "getregs in remotegdb, size %lu\n", size());
 
     // General registers
-    for (int i = 0; i < NumIntArchRegs; i++)
-    {
-        r.gpr[i] = context->readIntReg(i);
+    for (int i = 0; i < int_reg::NumArchRegs; i++) {
+        r.gpr[i] = context->getReg(intRegClass[i]);
     }
-    r.pc = context->pcState().pc();
+    r.pc = context->pcState().instAddr();
 
     // Floating point registers
-    for (int i = 0; i < NumFloatRegs; i++)
-        r.fpu[i] = context->readFloatReg(i);
+    for (int i = 0; i < float_reg::NumRegs; i++)
+        r.fpu[i] = context->getReg(floatRegClass[i]);
     r.fflags = context->readMiscRegNoEffect(
         CSRData.at(CSR_FFLAGS).physIndex) & CSRMasks.at(CSR_FFLAGS);
     r.frm = context->readMiscRegNoEffect(
@@ -298,13 +302,13 @@ RemoteGDB::RiscvGdbRegCache::setRegs(ThreadContext *context) const
     RegVal newVal;
 
     DPRINTF(GDBAcc, "setregs in remotegdb \n");
-    for (int i = 0; i < NumIntArchRegs; i++)
-        context->setIntReg(i, r.gpr[i]);
+    for (int i = 0; i < int_reg::NumArchRegs; i++)
+        context->setReg(intRegClass[i], r.gpr[i]);
     context->pcState(r.pc);
 
     // Floating point registers
-    for (int i = 0; i < NumFloatRegs; i++)
-        context->setFloatReg(i, r.fpu[i]);
+    for (int i = 0; i < float_reg::NumRegs; i++)
+        context->setReg(floatRegClass[i], r.fpu[i]);
 
     oldVal = context->readMiscRegNoEffect(
         CSRData.at(CSR_FFLAGS).physIndex);
@@ -486,3 +490,5 @@ RemoteGDB::gdbRegs()
 {
     return &regCache;
 }
+
+} // namespace gem5

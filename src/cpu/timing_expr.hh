@@ -55,11 +55,13 @@
 #include "params/TimingExprIf.hh"
 #include "params/TimingExprLet.hh"
 #include "params/TimingExprLiteral.hh"
-#include "params/TimingExprReadIntReg.hh"
 #include "params/TimingExprRef.hh"
 #include "params/TimingExprSrcReg.hh"
 #include "params/TimingExprUn.hh"
 #include "sim/sim_object.hh"
+
+namespace gem5
+{
 
 /** These classes are just the C++ counterparts for those in Expr.py and
  *  are, therefore, documented there */
@@ -121,19 +123,6 @@ class TimingExprSrcReg : public TimingExpr
     uint64_t eval(TimingExprEvalContext &context);
 };
 
-class TimingExprReadIntReg : public TimingExpr
-{
-  public:
-    TimingExpr *reg;
-
-    TimingExprReadIntReg(const TimingExprReadIntRegParams &params) :
-        TimingExpr(params),
-        reg(params.reg)
-    { }
-
-    uint64_t eval(TimingExprEvalContext &context);
-};
-
 class TimingExprLet : public TimingExpr
 {
   public:
@@ -165,7 +154,7 @@ class TimingExprRef : public TimingExpr
 class TimingExprUn : public TimingExpr
 {
   public:
-    Enums::TimingExprOp op;
+    enums::TimingExprOp op;
     TimingExpr *arg;
 
     TimingExprUn(const TimingExprUnParams &params) :
@@ -180,7 +169,7 @@ class TimingExprUn : public TimingExpr
 class TimingExprBin : public TimingExpr
 {
   public:
-    Enums::TimingExprOp op;
+    enums::TimingExprOp op;
     TimingExpr *left;
     TimingExpr *right;
 
@@ -210,5 +199,7 @@ class TimingExprIf : public TimingExpr
 
     uint64_t eval(TimingExprEvalContext &context);
 };
+
+} // namespace gem5
 
 #endif

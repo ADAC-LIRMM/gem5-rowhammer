@@ -46,7 +46,7 @@ def template SveMemFillSpillOpDeclare {{
 
       public:
         %(class_name)s(ExtMachInst machInst,
-                IntRegIndex _dest, IntRegIndex _base, uint64_t _imm) :
+                RegIndex _dest, RegIndex _base, uint64_t _imm) :
             %(base_class)s("%(mnemonic)s", machInst, %(op_class)s,
                 _dest, _base, _imm)
         {
@@ -54,10 +54,10 @@ def template SveMemFillSpillOpDeclare {{
             %(constructor)s;
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
 
         void
         annotateFault(ArmISA::ArmFault *fault) override
@@ -79,8 +79,8 @@ def template SveContigMemSSOpDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                IntRegIndex _dest, IntRegIndex _gp, IntRegIndex _base,
-                IntRegIndex _offset) :
+                RegIndex _dest, RegIndex _gp, RegIndex _base,
+                RegIndex _offset) :
             %(base_class)s(mnem, machInst, %(op_class)s,
                     _dest, _gp, _base, _offset)
         {
@@ -88,10 +88,10 @@ def template SveContigMemSSOpDeclare {{
             %(constructor)s;
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
 
         void
         annotateFault(ArmISA::ArmFault *fault) override
@@ -113,7 +113,7 @@ def template SveContigMemSIOpDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                IntRegIndex _dest, IntRegIndex _gp, IntRegIndex _base,
+                RegIndex _dest, RegIndex _gp, RegIndex _base,
                 uint64_t _imm) :
             %(base_class)s(mnem, machInst, %(op_class)s,
                     _dest, _gp, _base, _imm)
@@ -122,10 +122,10 @@ def template SveContigMemSIOpDeclare {{
             %(constructor)s;
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
 
         void
         annotateFault(ArmISA::ArmFault *fault) override
@@ -138,26 +138,26 @@ def template SveContigMemSIOpDeclare {{
 def template SveContigMemExecDeclare {{
     template
     Fault %(class_name)s%(tpl_args)s::execute(ExecContext *,
-        Trace::InstRecord *) const;
+        trace::InstRecord *) const;
 
     template
     Fault %(class_name)s%(tpl_args)s::initiateAcc(ExecContext *,
-        Trace::InstRecord *) const;
+        trace::InstRecord *) const;
 
     template
     Fault %(class_name)s%(tpl_args)s::completeAcc(PacketPtr,
-        ExecContext *, Trace::InstRecord *) const;
+        ExecContext *, trace::InstRecord *) const;
 }};
 
 def template SveContigLoadExecute {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<RegElemType>(xc->tcBase());
 
@@ -170,7 +170,7 @@ def template SveContigLoadExecute {{
 
         %(rden_code)s;
 
-        fault = readMemAtomic(xc, EA, memData.raw_ptr<uint8_t>(),
+        fault = readMemAtomic(xc, EA, memData.as<uint8_t>(),
             memAccessSize, this->memAccessFlags, rdEn);
 
         %(fault_code)s;
@@ -188,11 +188,11 @@ def template SveContigLoadInitiateAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::initiateAcc(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<RegElemType>(xc->tcBase());
 
@@ -215,9 +215,9 @@ def template SveContigLoadCompleteAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::completeAcc(PacketPtr pkt,
-            ExecContext *xc, Trace::InstRecord *traceData) const
+            ExecContext *xc, trace::InstRecord *traceData) const
     {
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<RegElemType>(xc->tcBase());
 
@@ -228,7 +228,7 @@ def template SveContigLoadCompleteAcc {{
         auto memDataView = memData.as<MemElemType>();
 
         if (xc->readMemAccPredicate()) {
-            memcpy(memData.raw_ptr<uint8_t>(), pkt->getPtr<uint8_t>(),
+            memcpy(memData.as<uint8_t>(), pkt->getPtr<uint8_t>(),
                    pkt->getSize());
         }
 
@@ -243,11 +243,11 @@ def template SveContigStoreExecute {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<RegElemType>(xc->tcBase());
 
@@ -265,7 +265,7 @@ def template SveContigStoreExecute {{
         }
 
         if (fault == NoFault) {
-            fault = writeMemAtomic(xc, memData.raw_ptr<uint8_t>(),
+            fault = writeMemAtomic(xc, memData.as<uint8_t>(),
                 EA, memAccessSize, this->memAccessFlags, nullptr, wrEn);
         }
 
@@ -281,11 +281,11 @@ def template SveContigStoreInitiateAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::initiateAcc(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<RegElemType>(xc->tcBase());
 
@@ -303,7 +303,7 @@ def template SveContigStoreInitiateAcc {{
         }
 
         if (fault == NoFault) {
-            fault = writeMemTiming(xc, memData.raw_ptr<uint8_t>(),
+            fault = writeMemTiming(xc, memData.as<uint8_t>(),
                 EA, memAccessSize, this->memAccessFlags, nullptr, wrEn);
         }
 
@@ -315,7 +315,7 @@ def template SveContigStoreCompleteAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::completeAcc(PacketPtr pkt,
-            ExecContext *xc, Trace::InstRecord *traceData) const
+            ExecContext *xc, trace::InstRecord *traceData) const
     {
         return NoFault;
     }
@@ -325,11 +325,11 @@ def template SveLoadAndReplExecute {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<RegElemType>(xc->tcBase());
 
@@ -357,11 +357,11 @@ def template SveLoadAndReplInitiateAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::initiateAcc(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
 
         %(op_src_decl)s;
         %(op_rd)s;
@@ -383,10 +383,10 @@ def template SveLoadAndReplCompleteAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::completeAcc(PacketPtr pkt,
-            ExecContext *xc, Trace::InstRecord *traceData) const
+            ExecContext *xc, trace::InstRecord *traceData) const
     {
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<RegElemType>(xc->tcBase());
 
@@ -418,9 +418,9 @@ def template SveIndexedMemVIMicroopDeclare {{
       protected:
         typedef RegElemType TPElem;
 
-        IntRegIndex dest;
-        IntRegIndex gp;
-        IntRegIndex base;
+        RegIndex dest;
+        RegIndex gp;
+        RegIndex base;
         uint64_t imm;
 
         int elemIndex;
@@ -431,14 +431,14 @@ def template SveIndexedMemVIMicroopDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                OpClass __opClass, IntRegIndex _dest, IntRegIndex _gp,
-                IntRegIndex _base, uint64_t _imm, int _elemIndex,
+                OpClass __opClass, RegIndex _dest, RegIndex _gp,
+                RegIndex _base, uint64_t _imm, int _elemIndex,
                 int _numElems, bool _firstFault) :
             %(base_class)s(mnem, machInst, %(op_class)s),
             dest(_dest), gp(_gp), base(_base), imm(_imm),
             elemIndex(_elemIndex), numElems(_numElems),
             firstFault(_firstFault),
-            memAccessFlags(ArmISA::TLB::AllowUnaligned)
+            memAccessFlags(ArmISA::MMU::AllowUnaligned)
         {
             %(set_reg_idx_arr)s;
             %(constructor)s;
@@ -454,10 +454,10 @@ def template SveIndexedMemVIMicroopDeclare {{
             }
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
 
         void
         annotateFault(ArmISA::ArmFault *fault) override
@@ -467,7 +467,7 @@ def template SveIndexedMemVIMicroopDeclare {{
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             // TODO: add suffix to transfer register
             std::stringstream ss;
@@ -500,10 +500,10 @@ def template SveIndexedMemSVMicroopDeclare {{
       protected:
         typedef RegElemType TPElem;
 
-        IntRegIndex dest;
-        IntRegIndex gp;
-        IntRegIndex base;
-        IntRegIndex offset;
+        RegIndex dest;
+        RegIndex gp;
+        RegIndex base;
+        RegIndex offset;
 
         bool offsetIs32;
         bool offsetIsSigned;
@@ -517,8 +517,8 @@ def template SveIndexedMemSVMicroopDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                OpClass __opClass, IntRegIndex _dest, IntRegIndex _gp,
-                IntRegIndex _base, IntRegIndex _offset, bool _offsetIs32,
+                OpClass __opClass, RegIndex _dest, RegIndex _gp,
+                RegIndex _base, RegIndex _offset, bool _offsetIs32,
                 bool _offsetIsSigned, bool _offsetIsScaled, int _elemIndex,
                 int _numElems, bool _firstFault) :
             %(base_class)s(mnem, machInst, %(op_class)s),
@@ -526,7 +526,7 @@ def template SveIndexedMemSVMicroopDeclare {{
             offsetIs32(_offsetIs32), offsetIsSigned(_offsetIsSigned),
             offsetIsScaled(_offsetIsScaled), elemIndex(_elemIndex),
             numElems(_numElems), firstFault(_firstFault),
-            memAccessFlags(ArmISA::TLB::AllowUnaligned)
+            memAccessFlags(ArmISA::MMU::AllowUnaligned)
         {
             %(set_reg_idx_arr)s;
             %(constructor)s;
@@ -542,10 +542,10 @@ def template SveIndexedMemSVMicroopDeclare {{
             }
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
 
         void
         annotateFault(ArmISA::ArmFault *fault) override
@@ -555,7 +555,7 @@ def template SveIndexedMemSVMicroopDeclare {{
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             // TODO: add suffix to transfer and base registers
             std::stringstream ss;
@@ -581,11 +581,11 @@ def template SveGatherLoadMicroopExecute {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
 
         %(op_decl)s;
         %(op_rd)s;
@@ -630,11 +630,11 @@ def template SveGatherLoadMicroopInitiateAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::initiateAcc(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
 
         %(op_src_decl)s;
         %(op_rd)s;
@@ -673,9 +673,9 @@ def template SveGatherLoadMicroopCompleteAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::completeAcc(PacketPtr pkt,
-            ExecContext *xc, Trace::InstRecord *traceData) const
+            ExecContext *xc, trace::InstRecord *traceData) const
     {
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
 
         %(op_decl)s;
         %(op_rd)s;
@@ -698,11 +698,11 @@ def template SveScatterStoreMicroopExecute {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
 
         %(op_decl)s;
         %(op_rd)s;
@@ -729,11 +729,11 @@ def template SveScatterStoreMicroopInitiateAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::initiateAcc(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
 
         %(op_decl)s;
         %(op_rd)s;
@@ -758,7 +758,7 @@ def template SveScatterStoreMicroopCompleteAcc {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::completeAcc(PacketPtr pkt,
-            ExecContext *xc, Trace::InstRecord *traceData) const
+            ExecContext *xc, trace::InstRecord *traceData) const
     {
         return NoFault;
     }
@@ -786,11 +786,11 @@ def template SveFirstFaultWritebackMicroopDeclare {{
             %(constructor)s;
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             std::stringstream ss;
             ccprintf(ss, "%s", macroOp->disassemble(pc, symtab));
@@ -804,9 +804,9 @@ def template SveFirstFaultWritebackMicroopExecute {{
     %(tpl_header)s
     Fault
     %(class_name)s%(tpl_args)s::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
 
         %(op_decl)s;
         %(op_rd)s;
@@ -834,24 +834,24 @@ def template SveGatherLoadCpySrcVecMicroopDeclare {{
         %(reg_idx_arr_decl)s;
 
       protected:
-        IntRegIndex op1;
+        RegIndex op1;
 
         StaticInst *macroOp;
 
       public:
         SveGatherLoadCpySrcVecMicroop(const char* mnem, ExtMachInst machInst,
-                IntRegIndex _op1, StaticInst *_macroOp) :
+                RegIndex _op1, StaticInst *_macroOp) :
             MicroOp(mnem, machInst, SimdAluOp), op1(_op1), macroOp(_macroOp)
         {
             %(set_reg_idx_arr)s;
             %(constructor)s;
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             std::stringstream ss;
             ccprintf(ss, "%s", macroOp->disassemble(pc, symtab));
@@ -864,7 +864,7 @@ def template SveGatherLoadCpySrcVecMicroopDeclare {{
 def template SveGatherLoadCpySrcVecMicroopExecute {{
     Fault
     SveGatherLoadCpySrcVecMicroop::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Fault fault = NoFault;
         %(op_decl)s;
@@ -890,9 +890,9 @@ def template SveStructMemSIMicroopDeclare {{
         typedef _Element Element;
         typedef _Element TPElem;
 
-        IntRegIndex dest;
-        IntRegIndex gp;
-        IntRegIndex base;
+        RegIndex dest;
+        RegIndex gp;
+        RegIndex base;
         int64_t imm;
 
         uint8_t numRegs;
@@ -904,22 +904,22 @@ def template SveStructMemSIMicroopDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                IntRegIndex _dest, IntRegIndex _gp, IntRegIndex _base,
+                RegIndex _dest, RegIndex _gp, RegIndex _base,
                 int64_t _imm, uint8_t _numRegs, int _regIndex) :
             %(base_class)s(mnem, machInst, %(op_class)s),
             dest(_dest), gp(_gp), base(_base), imm(_imm),
             numRegs(_numRegs), regIndex(_regIndex),
-            memAccessFlags(ArmISA::TLB::AllowUnaligned)
+            memAccessFlags(ArmISA::MMU::AllowUnaligned)
         {
             %(set_reg_idx_arr)s;
             %(constructor)s;
             baseIsSP = isSP(_base);
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
 
         void
         annotateFault(ArmISA::ArmFault *fault) override
@@ -929,7 +929,7 @@ def template SveStructMemSIMicroopDeclare {{
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             std::stringstream ss;
             printMnemonic(ss, "", false);
@@ -970,26 +970,26 @@ def template SveStructMemSIMicroopDeclare {{
 def template SveStructMemExecDeclare {{
     template
     Fault %(class_name)s<%(targs)s>::execute(ExecContext *,
-        Trace::InstRecord *) const;
+        trace::InstRecord *) const;
 
     template
     Fault %(class_name)s<%(targs)s>::initiateAcc(ExecContext *,
-        Trace::InstRecord *) const;
+        trace::InstRecord *) const;
 
     template
     Fault %(class_name)s<%(targs)s>::completeAcc(PacketPtr,
-        ExecContext *, Trace::InstRecord *) const;
+        ExecContext *, trace::InstRecord *) const;
 }};
 
 def template SveStructLoadExecute {{
     template <class Element>
     Fault
     %(class_name)s<Element>::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<Element>(xc->tcBase());
 
@@ -1001,7 +1001,7 @@ def template SveStructLoadExecute {{
         auto memDataView = memData.as<Element>();
 
         if (fault == NoFault) {
-            fault = readMemAtomic(xc, EA, memData.raw_ptr<uint8_t>(),
+            fault = readMemAtomic(xc, EA, memData.as<uint8_t>(),
                 memAccessSize, this->memAccessFlags,
                 std::vector<bool>(memAccessSize, true));
             %(memacc_code)s;
@@ -1019,11 +1019,11 @@ def template SveStructLoadInitiateAcc {{
     template <class Element>
     Fault
     %(class_name)s<Element>::initiateAcc(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<Element>(xc->tcBase());
 
@@ -1046,10 +1046,10 @@ def template SveStructLoadCompleteAcc {{
     template <class Element>
     Fault
     %(class_name)s<Element>::completeAcc(PacketPtr pkt,
-            ExecContext *xc, Trace::InstRecord *traceData) const
+            ExecContext *xc, trace::InstRecord *traceData) const
     {
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<Element>(xc->tcBase());
 
@@ -1059,7 +1059,7 @@ def template SveStructLoadCompleteAcc {{
         ArmISA::VecRegContainer memData;
         auto memDataView = memData.as<Element>();
 
-        memcpy(memData.raw_ptr<uint8_t>(), pkt->getPtr<uint8_t>(),
+        memcpy(memData.as<uint8_t>(), pkt->getPtr<uint8_t>(),
                 pkt->getSize());
 
         if (fault == NoFault) {
@@ -1078,11 +1078,11 @@ def template SveStructStoreExecute {{
     template <class Element>
     Fault
     %(class_name)s<Element>::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<Element>(xc->tcBase());
 
@@ -1100,7 +1100,7 @@ def template SveStructStoreExecute {{
         }
 
         if (fault == NoFault) {
-            fault = writeMemAtomic(xc, memData.raw_ptr<uint8_t>(),
+            fault = writeMemAtomic(xc, memData.as<uint8_t>(),
                 EA, memAccessSize, this->memAccessFlags, nullptr, wrEn);
         }
 
@@ -1116,11 +1116,11 @@ def template SveStructStoreInitiateAcc {{
     template <class Element>
     Fault
     %(class_name)s<Element>::initiateAcc(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Addr EA;
         Fault fault = NoFault;
-        M5_VAR_USED bool aarch64 = true;
+        [[maybe_unused]] bool aarch64 = true;
         unsigned eCount =
             ArmStaticInst::getCurSveVecLen<Element>(xc->tcBase());
 
@@ -1138,7 +1138,7 @@ def template SveStructStoreInitiateAcc {{
         }
 
         if (fault == NoFault) {
-            fault = writeMemTiming(xc, memData.raw_ptr<uint8_t>(),
+            fault = writeMemTiming(xc, memData.as<uint8_t>(),
                 EA, memAccessSize, this->memAccessFlags, nullptr, wrEn);
         }
 
@@ -1150,7 +1150,7 @@ def template SveStructStoreCompleteAcc {{
     template <class Element>
     Fault
     %(class_name)s<Element>::completeAcc(PacketPtr pkt,
-            ExecContext *xc, Trace::InstRecord *traceData) const
+            ExecContext *xc, trace::InstRecord *traceData) const
     {
         return NoFault;
     }
@@ -1167,10 +1167,10 @@ def template SveStructMemSSMicroopDeclare {{
         typedef _Element Element;
         typedef _Element TPElem;
 
-        IntRegIndex dest;
-        IntRegIndex gp;
-        IntRegIndex base;
-        IntRegIndex offset;
+        RegIndex dest;
+        RegIndex gp;
+        RegIndex base;
+        RegIndex offset;
 
         uint8_t numRegs;
         int regIndex;
@@ -1181,22 +1181,22 @@ def template SveStructMemSSMicroopDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                IntRegIndex _dest, IntRegIndex _gp, IntRegIndex _base,
-                IntRegIndex _offset, uint8_t _numRegs, int _regIndex) :
+                RegIndex _dest, RegIndex _gp, RegIndex _base,
+                RegIndex _offset, uint8_t _numRegs, int _regIndex) :
             %(base_class)s(mnem, machInst, %(op_class)s),
             dest(_dest), gp(_gp), base(_base), offset(_offset),
             numRegs(_numRegs), regIndex(_regIndex),
-            memAccessFlags(ArmISA::TLB::AllowUnaligned)
+            memAccessFlags(ArmISA::MMU::AllowUnaligned)
         {
             %(set_reg_idx_arr)s;
             %(constructor)s;
             baseIsSP = isSP(_base);
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          Trace::InstRecord *) const override;
+                          trace::InstRecord *) const override;
 
         void
         annotateFault(ArmISA::ArmFault *fault) override
@@ -1206,7 +1206,7 @@ def template SveStructMemSSMicroopDeclare {{
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             std::stringstream ss;
             printMnemonic(ss, "", false);
@@ -1253,8 +1253,8 @@ def template SveIntrlvMicroopDeclare {{
       protected:
         typedef _Element Element;
         typedef _Element TPElem;
-        IntRegIndex dest;
-        IntRegIndex op1;
+        RegIndex dest;
+        RegIndex op1;
         uint8_t numRegs;
         int regIndex;
 
@@ -1262,7 +1262,7 @@ def template SveIntrlvMicroopDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                IntRegIndex _dest, IntRegIndex _op1,
+                RegIndex _dest, RegIndex _op1,
                 uint8_t _numRegs, int _regIndex, StaticInst *_macroOp) :
             MicroOp(mnem, machInst, SimdAluOp), dest(_dest), op1(_op1),
             numRegs(_numRegs), regIndex(_regIndex), macroOp(_macroOp)
@@ -1271,11 +1271,11 @@ def template SveIntrlvMicroopDeclare {{
             %(constructor)s;
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             std::stringstream ss;
             ccprintf(ss, "%s", macroOp->disassemble(pc, symtab));
@@ -1295,7 +1295,7 @@ def template SveDeIntrlvMicroopDeclare {{
       protected:
         typedef _Element Element;
         typedef _Element TPElem;
-        IntRegIndex dest;
+        RegIndex dest;
         uint8_t numRegs;
         int regIndex;
 
@@ -1303,7 +1303,7 @@ def template SveDeIntrlvMicroopDeclare {{
 
       public:
         %(class_name)s(const char* mnem, ExtMachInst machInst,
-                IntRegIndex _dest, uint8_t _numRegs, int _regIndex,
+                RegIndex _dest, uint8_t _numRegs, int _regIndex,
                 StaticInst *_macroOp) :
             MicroOp(mnem, machInst, SimdAluOp), dest(_dest),
             numRegs(_numRegs), regIndex(_regIndex), macroOp(_macroOp)
@@ -1312,11 +1312,11 @@ def template SveDeIntrlvMicroopDeclare {{
             %(constructor)s;
         }
 
-        Fault execute(ExecContext *, Trace::InstRecord *) const override;
+        Fault execute(ExecContext *, trace::InstRecord *) const override;
 
         std::string
         generateDisassembly(Addr pc,
-                            const Loader::SymbolTable *symtab) const override
+                            const loader::SymbolTable *symtab) const override
         {
             std::stringstream ss;
             ccprintf(ss, "%s", macroOp->disassemble(pc, symtab));
@@ -1329,14 +1329,14 @@ def template SveDeIntrlvMicroopDeclare {{
 def template SveIntrlvMicroopExecDeclare {{
     template
     Fault %(class_name)s<%(targs)s>::execute(
-            ExecContext *, Trace::InstRecord *) const;
+            ExecContext *, trace::InstRecord *) const;
 }};
 
 def template SveIntrlvMicroopExecute {{
     template <class Element>
     Fault
     %(class_name)s<Element>::execute(ExecContext *xc,
-            Trace::InstRecord *traceData) const
+            trace::InstRecord *traceData) const
     {
         Fault fault = NoFault;
         %(op_decl)s;

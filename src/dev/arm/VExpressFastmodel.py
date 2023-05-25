@@ -28,23 +28,30 @@ from m5.objects.Gic import ArmSPI
 from m5.objects.RealView import VExpress_GEM5_Base, HDLcd
 from m5.objects.SubSystem import SubSystem
 
+
 class VExpressFastmodel(VExpress_GEM5_Base):
     gic = FastModelGIC(
         sc_gic=SCFastModelGIC(
-            reg_base=0x2c000000,
+            its_count=1,
+            its0_base=0x2E010000,
+            reg_base=0x2C000000,
             reg_base_per_redistributor="0.0.0.0=0x2c010000",
             spi_count=988,
-        ))
+        )
+    )
 
     hdlcd = HDLcd(
-        pxl_clk=VExpress_GEM5_Base.dcc.osc_pxl, pio_addr=0x2b000000,
-        interrupt=ArmSPI(num=95))
+        pxl_clk=VExpress_GEM5_Base.dcc.osc_pxl,
+        pio_addr=0x2B000000,
+        interrupt=ArmSPI(num=95),
+    )
 
     # Remove original timer to prevent from possible conflict with Fastmodel
     # timer.
     generic_timer = SubSystem()
     generic_timer_mem = SubSystem()
     sys_counter = SubSystem()
+    el2_watchdog = SubSystem()
 
     def _on_chip_devices(self):
         return [
@@ -56,6 +63,5 @@ class VExpressFastmodel(VExpress_GEM5_Base):
 
     def setupBootLoader(self, cur_sys, loc, boot_loader=None):
         if boot_loader is None:
-            boot_loader = [ loc('boot_v2.arm64') ]
-        super(VExpressFastmodel, self).setupBootLoader(
-                cur_sys, boot_loader)
+            boot_loader = [loc("boot_v2.arm64")]
+        super().setupBootLoader(cur_sys, boot_loader)

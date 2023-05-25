@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017,2019-2021 ARM Limited
+ * Copyright (c) 2017,2019-2022 ARM Limited
  * All rights reserved.
  *
  * The license below extends only to copyright in the software and shall
@@ -47,6 +47,12 @@
 #include "mem/ruby/system/Sequencer.hh"
 #include "sim/system.hh"
 
+namespace gem5
+{
+
+namespace ruby
+{
+
 AbstractController::AbstractController(const Params &p)
     : ClockedObject(p), Consumer(this), m_version(p.version),
       m_clusterID(p.cluster_id),
@@ -55,6 +61,7 @@ AbstractController::AbstractController(const Params &p)
       m_transitions_per_cycle(p.transitions_per_cycle),
       m_buffer_size(p.buffer_size), m_recycle_latency(p.recycle_latency),
       m_mandatory_queue_latency(p.mandatory_queue_latency),
+      m_waiting_mem_retry(false),
       memoryPort(csprintf("%s.memory", name()), this),
       addrRanges(p.addr_ranges.begin(), p.addr_ranges.end()),
       stats(this)
@@ -62,7 +69,7 @@ AbstractController::AbstractController(const Params &p)
     if (m_version == 0) {
         // Combine the statistics from all controllers
         // of this particular type.
-        Stats::registerDumpCallback([this]() { collateStats(); });
+        statistics::registerDumpCallback([this]() { collateStats(); });
     }
 }
 
@@ -72,7 +79,7 @@ AbstractController::init()
     stats.delayHistogram.init(10);
     uint32_t size = Network::getNumberOfVirtualNetworks();
     for (uint32_t i = 0; i < size; i++) {
-        stats.delayVCHistogram.push_back(new Stats::Histogram(this));
+        stats.delayVCHistogram.push_back(new statistics::Histogram(this));
         stats.delayVCHistogram[i]->init(10);
     }
 
@@ -89,19 +96,23 @@ AbstractController::init()
         MachineID mid = abs_cntrl->getMachineID();
         const AddrRangeList &ranges = abs_cntrl->getAddrRanges();
         for (const auto &addr_range : ranges) {
-            auto i = downstreamAddrMap.intersects(addr_range);
-            if (i == downstreamAddrMap.end()) {
-                i = downstreamAddrMap.insert(addr_range, AddrMapEntry());
+            auto i = downstreamAddrMap.find(mid.getType());
+            if ((i != downstreamAddrMap.end()) &&
+                (i->second.intersects(addr_range) != i->second.end())) {
+                fatal("%s: %s mapped to multiple machines of the same type\n",
+                    name(), addr_range.to_string());
             }
-            AddrMapEntry &entry = i->second;
-            fatal_if(entry.count(mid.getType()) > 0,
-                     "%s: %s mapped to multiple machines of the same type\n",
-                     name(), addr_range.to_string());
-            entry[mid.getType()] = mid;
+            downstreamAddrMap[mid.getType()].insert(addr_range, mid);
         }
         downstreamDestinations.add(mid);
     }
-
+    // Initialize the addr->upstream machine list.
+    // We do not need to map address -> upstream machine,
+    // so we don't examine the address ranges
+    upstreamDestinations.resize();
+    for (auto abs_cntrl : params().upstream_destinations) {
+        upstreamDestinations.add(abs_cntrl->getMachineID());
+    }
 }
 
 void
@@ -249,7 +260,7 @@ AbstractController::serviceMemoryQueue()
 {
     auto mem_queue = getMemReqQueue();
     assert(mem_queue);
-    if (!mem_queue->isReady(clockEdge())) {
+    if (m_waiting_mem_retry || !mem_queue->isReady(clockEdge())) {
         return false;
     }
 
@@ -295,6 +306,7 @@ AbstractController::serviceMemoryQueue()
         scheduleEvent(Cycles(1));
     } else {
         scheduleEvent(Cycles(1));
+        m_waiting_mem_retry = true;
         delete pkt;
         delete s;
     }
@@ -405,23 +417,24 @@ MachineID
 AbstractController::mapAddressToDownstreamMachine(Addr addr, MachineType mtype)
 const
 {
-    const auto i = downstreamAddrMap.contains(addr);
-    fatal_if(i == downstreamAddrMap.end(),
-      "%s: couldn't find mapping for address %x\n", name(), addr);
-
-    const AddrMapEntry &entry = i->second;
-    assert(!entry.empty());
-
     if (mtype == MachineType_NUM) {
-        fatal_if(entry.size() > 1,
-          "%s: address %x mapped to multiple machine types.\n", name(), addr);
-        return entry.begin()->second;
-    } else {
-        auto j = entry.find(mtype);
-        fatal_if(j == entry.end(),
-          "%s: couldn't find mapping for address %x\n", name(), addr);
-        return j->second;
+        // map to the first match
+        for (const auto &i : downstreamAddrMap) {
+            const auto mapping = i.second.contains(addr);
+            if (mapping != i.second.end())
+                return mapping->second;
+        }
     }
+    else {
+        const auto i = downstreamAddrMap.find(mtype);
+        if (i != downstreamAddrMap.end()) {
+            const auto mapping = i->second.contains(addr);
+            if (mapping != i->second.end())
+                return mapping->second;
+        }
+    }
+    fatal("%s: couldn't find mapping for address %x mtype=%s\n",
+        name(), addr, mtype);
 }
 
 
@@ -435,6 +448,7 @@ AbstractController::MemoryPort::recvTimingResp(PacketPtr pkt)
 void
 AbstractController::MemoryPort::recvReqRetry()
 {
+    controller->m_waiting_mem_retry = false;
     controller->serviceMemoryQueue();
 }
 
@@ -446,14 +460,17 @@ AbstractController::MemoryPort::MemoryPort(const std::string &_name,
 }
 
 AbstractController::
-ControllerStats::ControllerStats(Stats::Group *parent)
-    : Stats::Group(parent),
+ControllerStats::ControllerStats(statistics::Group *parent)
+    : statistics::Group(parent),
       ADD_STAT(fullyBusyCycles,
                "cycles for which number of transistions == max transitions"),
       ADD_STAT(delayHistogram, "delay_histogram")
 {
     fullyBusyCycles
-        .flags(Stats::nozero);
+        .flags(statistics::nozero);
     delayHistogram
-        .flags(Stats::nozero);
+        .flags(statistics::nozero);
 }
+
+} // namespace ruby
+} // namespace gem5

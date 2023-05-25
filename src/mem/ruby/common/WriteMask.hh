@@ -50,6 +50,12 @@
 #include "mem/ruby/common/DataBlock.hh"
 #include "mem/ruby/common/TypeDefines.hh"
 
+namespace gem5
+{
+
+namespace ruby
+{
+
 class WriteMask
 {
   public:
@@ -126,7 +132,7 @@ class WriteMask
     }
 
     bool
-    cmpMask(const WriteMask &readMask) const
+    containsMask(const WriteMask &readMask) const
     {
         bool tmp = true;
         assert(mSize == readMask.mSize);
@@ -164,7 +170,7 @@ class WriteMask
     {
         assert(mSize == writeMask.mSize);
         for (int i = 0; i < mSize; i++) {
-            mMask[i] = (mMask.at(i)) & (writeMask.mMask.at(i));
+            mMask[i] = (mMask.at(i)) && (writeMask.mMask.at(i));
         }
 
         if (writeMask.mAtomic) {
@@ -178,7 +184,7 @@ class WriteMask
     {
         assert(mSize == writeMask.mSize);
         for (int i = 0; i < mSize; i++) {
-            mMask[i] = (mMask.at(i)) | (writeMask.mMask.at(i));
+            mMask[i] = (mMask.at(i)) || (writeMask.mMask.at(i));
         }
 
         if (writeMask.mAtomic) {
@@ -264,5 +270,8 @@ operator<<(std::ostream& out, const WriteMask& obj)
     out << std::flush;
     return out;
 }
+
+} // namespace ruby
+} // namespace gem5
 
 #endif // __MEM_RUBY_COMMON_WRITEMASK_HH__

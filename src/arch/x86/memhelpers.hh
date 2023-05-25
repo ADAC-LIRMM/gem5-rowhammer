@@ -37,12 +37,15 @@
 #include "sim/byteswap.hh"
 #include "sim/insttracer.hh"
 
+namespace gem5
+{
+
 namespace X86ISA
 {
 
 /// Initiate a read from memory in timing mode.
 static Fault
-initiateMemRead(ExecContext *xc, Trace::InstRecord *traceData, Addr addr,
+initiateMemRead(ExecContext *xc, trace::InstRecord *traceData, Addr addr,
                 unsigned dataSize, Request::Flags flags)
 {
     const std::vector<bool> byte_enable(dataSize, true);
@@ -51,7 +54,7 @@ initiateMemRead(ExecContext *xc, Trace::InstRecord *traceData, Addr addr,
 
 static void
 getMem(PacketPtr pkt, uint64_t &mem, unsigned dataSize,
-       Trace::InstRecord *traceData)
+       trace::InstRecord *traceData)
 {
     switch (dataSize) {
       case 1:
@@ -85,7 +88,7 @@ getPackedMem(PacketPtr pkt, std::array<uint64_t, N> &mem, unsigned dataSize)
 template <size_t N>
 static void
 getMem(PacketPtr pkt, std::array<uint64_t, N> &mem, unsigned dataSize,
-       Trace::InstRecord *traceData)
+       trace::InstRecord *traceData)
 {
     switch (dataSize) {
       case 4:
@@ -103,7 +106,7 @@ getMem(PacketPtr pkt, std::array<uint64_t, N> &mem, unsigned dataSize,
 
 
 static Fault
-readMemAtomic(ExecContext *xc, Trace::InstRecord *traceData, Addr addr,
+readMemAtomic(ExecContext *xc, trace::InstRecord *traceData, Addr addr,
               uint64_t &mem, unsigned dataSize, Request::Flags flags)
 {
     memset(&mem, 0, sizeof(mem));
@@ -142,7 +145,7 @@ readPackedMemAtomic(ExecContext *xc, Addr addr, std::array<uint64_t, N> &mem,
 
 template <size_t N>
 static Fault
-readMemAtomic(ExecContext *xc, Trace::InstRecord *traceData, Addr addr,
+readMemAtomic(ExecContext *xc, trace::InstRecord *traceData, Addr addr,
               std::array<uint64_t, N> &mem, unsigned dataSize,
               unsigned flags)
 {
@@ -180,7 +183,7 @@ writePackedMem(ExecContext *xc, std::array<uint64_t, N> &mem, Addr addr,
 }
 
 static Fault
-writeMemTiming(ExecContext *xc, Trace::InstRecord *traceData, uint64_t mem,
+writeMemTiming(ExecContext *xc, trace::InstRecord *traceData, uint64_t mem,
                unsigned dataSize, Addr addr, Request::Flags flags,
                uint64_t *res)
 {
@@ -194,7 +197,7 @@ writeMemTiming(ExecContext *xc, Trace::InstRecord *traceData, uint64_t mem,
 
 template <size_t N>
 static Fault
-writeMemTiming(ExecContext *xc, Trace::InstRecord *traceData,
+writeMemTiming(ExecContext *xc, trace::InstRecord *traceData,
                std::array<uint64_t, N> &mem, unsigned dataSize,
                Addr addr, unsigned flags, uint64_t *res)
 {
@@ -212,7 +215,7 @@ writeMemTiming(ExecContext *xc, Trace::InstRecord *traceData,
 }
 
 static Fault
-writeMemAtomic(ExecContext *xc, Trace::InstRecord *traceData, uint64_t mem,
+writeMemAtomic(ExecContext *xc, trace::InstRecord *traceData, uint64_t mem,
                unsigned dataSize, Addr addr, Request::Flags flags,
                uint64_t *res)
 {
@@ -229,7 +232,7 @@ writeMemAtomic(ExecContext *xc, Trace::InstRecord *traceData, uint64_t mem,
 
 template <size_t N>
 static Fault
-writeMemAtomic(ExecContext *xc, Trace::InstRecord *traceData,
+writeMemAtomic(ExecContext *xc, trace::InstRecord *traceData,
                std::array<uint64_t, N> &mem, unsigned dataSize,
                Addr addr, unsigned flags, uint64_t *res)
 {
@@ -254,6 +257,7 @@ writeMemAtomic(ExecContext *xc, Trace::InstRecord *traceData,
     return fault;
 }
 
-}
+} // namespace X86ISA
+} // namespace gem5
 
 #endif

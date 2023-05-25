@@ -33,12 +33,16 @@
 #include "cpu/nativetrace.hh"
 #include "params/ArmNativeTrace.hh"
 
-namespace Trace {
+namespace gem5
+{
+
+namespace trace {
 
 class ArmNativeTrace : public NativeTrace
 {
   public:
-    enum StateID {
+    enum StateID
+    {
         STATE_R0,
         STATE_R1,
         STATE_R2,
@@ -70,7 +74,8 @@ class ArmNativeTrace : public NativeTrace
     };
 
   protected:
-    struct ThreadState {
+    struct ThreadState
+    {
         bool changed[STATE_NUMVALS];
         uint64_t state[2][STATE_NUMVALS];
         uint64_t *newState;
@@ -105,6 +110,7 @@ class ArmNativeTrace : public NativeTrace
     void check(NativeTraceRecord *record);
 };
 
-} // namespace Trace
+} // namespace trace
+} // namespace gem5
 
 #endif // __ARCH_ARM_NATIVETRACE_HH__

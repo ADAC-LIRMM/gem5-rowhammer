@@ -35,6 +35,15 @@
 #include "mem/ruby/network/garnet/OutputUnit.hh"
 #include "mem/ruby/network/garnet/Router.hh"
 
+namespace gem5
+{
+
+namespace ruby
+{
+
+namespace garnet
+{
+
 CrossbarSwitch::CrossbarSwitch(Router *router)
   : Consumer(router), m_router(router), m_num_vcs(m_router->get_num_vcs()),
     m_crossbar_activity(0), switchBuffers(0)
@@ -82,6 +91,17 @@ CrossbarSwitch::wakeup()
     }
 }
 
+bool
+CrossbarSwitch::functionalRead(Packet *pkt, WriteMask &mask)
+{
+    bool read = false;
+    for (auto& switch_buffer : switchBuffers) {
+        if (switch_buffer.functionalRead(pkt, mask))
+            read = true;
+   }
+   return read;
+}
+
 uint32_t
 CrossbarSwitch::functionalWrite(Packet *pkt)
 {
@@ -99,3 +119,7 @@ CrossbarSwitch::resetStats()
 {
     m_crossbar_activity = 0;
 }
+
+} // namespace garnet
+} // namespace ruby
+} // namespace gem5

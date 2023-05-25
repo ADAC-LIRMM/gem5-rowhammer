@@ -29,25 +29,40 @@
 #define __ARCH_ARM_SE_WORKLOAD_HH__
 
 #include "arch/arm/reg_abi.hh"
+#include "arch/arm/remote_gdb.hh"
 #include "params/ArmSEWorkload.hh"
 #include "sim/se_workload.hh"
+
+namespace gem5
+{
 
 namespace ArmISA
 {
 
-class SEWorkload : public ::SEWorkload
+class SEWorkload : public gem5::SEWorkload
 {
   public:
-    using Params = ArmSEWorkloadParams;
+    PARAMS(ArmSEWorkload);
 
-    SEWorkload(const Params &p) : ::SEWorkload(p) {}
+    SEWorkload(const Params &p, Addr page_shift) :
+        gem5::SEWorkload(p, page_shift)
+    {}
 
-    ::Loader::Arch getArch() const override { return ::Loader::Arm64; }
+    void
+    setSystem(System *sys) override
+    {
+        gem5::SEWorkload::setSystem(sys);
+        gdb = BaseRemoteGDB::build<RemoteGDB>(
+                params().remote_gdb_port, system);
+    }
+
+    loader::Arch getArch() const override { return loader::Arm64; }
 
     using SyscallABI32 = RegABI32;
     using SyscallABI64 = RegABI64;
 };
 
 } // namespace ArmISA
+} // namespace gem5
 
 #endif // __ARCH_ARM_SE_WORKLOAD_HH__

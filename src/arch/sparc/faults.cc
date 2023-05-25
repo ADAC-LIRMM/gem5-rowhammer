@@ -33,14 +33,19 @@
 #include "arch/sparc/mmu.hh"
 #include "arch/sparc/process.hh"
 #include "arch/sparc/se_workload.hh"
+#include "arch/sparc/sparc_traits.hh"
 #include "arch/sparc/types.hh"
 #include "base/bitfield.hh"
+#include "base/compiler.hh"
 #include "base/trace.hh"
 #include "cpu/base.hh"
 #include "cpu/thread_context.hh"
 #include "mem/page_table.hh"
 #include "sim/full_system.hh"
 #include "sim/process.hh"
+
+namespace gem5
+{
 
 namespace SparcISA
 {
@@ -301,12 +306,12 @@ doREDFault(ThreadContext *tc, TrapType tt)
     RegVal TSTATE = tc->readMiscRegNoEffect(MISCREG_TSTATE);
     PSTATE pstate = tc->readMiscRegNoEffect(MISCREG_PSTATE);
     HPSTATE hpstate = tc->readMiscRegNoEffect(MISCREG_HPSTATE);
-    CCR ccr = tc->readIntReg(INTREG_CCR);
+    CCR ccr = tc->getReg(int_reg::Ccr);
     RegVal ASI = tc->readMiscRegNoEffect(MISCREG_ASI);
     RegVal CWP = tc->readMiscRegNoEffect(MISCREG_CWP);
-    RegVal CANSAVE = tc->readMiscRegNoEffect(INTREG_CANSAVE);
+    RegVal CANSAVE = tc->getReg(int_reg::Cansave);
     RegVal GL = tc->readMiscRegNoEffect(MISCREG_GL);
-    PCState pc = tc->pcState();
+    auto &pc = tc->pcState().as<PCState>();
 
     TL++;
 
@@ -380,12 +385,12 @@ doNormalFault(ThreadContext *tc, TrapType tt, bool gotoHpriv)
     RegVal TSTATE = tc->readMiscRegNoEffect(MISCREG_TSTATE);
     PSTATE pstate = tc->readMiscRegNoEffect(MISCREG_PSTATE);
     HPSTATE hpstate = tc->readMiscRegNoEffect(MISCREG_HPSTATE);
-    CCR ccr = tc->readIntReg(INTREG_CCR);
+    CCR ccr = tc->getReg(int_reg::Ccr);
     RegVal ASI = tc->readMiscRegNoEffect(MISCREG_ASI);
     RegVal CWP = tc->readMiscRegNoEffect(MISCREG_CWP);
-    RegVal CANSAVE = tc->readIntReg(INTREG_CANSAVE);
+    RegVal CANSAVE = tc->getReg(int_reg::Cansave);
     RegVal GL = tc->readMiscRegNoEffect(MISCREG_GL);
-    PCState pc = tc->pcState();
+    auto &pc = tc->pcState().as<PCState>();
 
     // Increment the trap level
     TL++;
@@ -498,7 +503,6 @@ SparcFaultBase::invoke(ThreadContext * tc, const StaticInstPtr &inst)
     if (!FullSystem)
         return;
 
-    countStat()++;
 
     // We can refer to this to see what the trap level -was-, but something
     // in the middle could change it in the regfile out from under us.
@@ -812,7 +816,7 @@ TrapInstruction::invoke(ThreadContext *tc, const StaticInstPtr &inst)
 
     Process *p = tc->getProcessPtr();
 
-    M5_VAR_USED SparcProcess *sp = dynamic_cast<SparcProcess *>(p);
+    [[maybe_unused]] SparcProcess *sp = dynamic_cast<SparcProcess *>(p);
     assert(sp);
 
     auto *workload = dynamic_cast<SEWorkload *>(tc->getSystemPtr()->workload);
@@ -820,10 +824,10 @@ TrapInstruction::invoke(ThreadContext *tc, const StaticInstPtr &inst)
 
     // We need to explicitly advance the pc, since that's not done for us
     // on a faulting instruction
-    PCState pc = tc->pcState();
+    PCState pc = tc->pcState().as<PCState>();
     pc.advance();
     tc->pcState(pc);
 }
 
 } // namespace SparcISA
-
+} // namespace gem5

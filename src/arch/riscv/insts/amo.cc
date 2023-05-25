@@ -37,13 +37,16 @@
 #include "cpu/exec_context.hh"
 #include "cpu/static_inst.hh"
 
+namespace gem5
+{
+
 namespace RiscvISA
 {
 
 // memfence micro instruction
 std::string
 MemFenceMicro::generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const
+        Addr pc, const loader::SymbolTable *symtab) const
 {
     std::stringstream ss;
     ss << csprintf("0x%08x", machInst) << ' ' << mnemonic;
@@ -51,7 +54,7 @@ MemFenceMicro::generateDisassembly(
 }
 
 Fault MemFenceMicro::execute(ExecContext *xc,
-    Trace::InstRecord *traceData) const
+    trace::InstRecord *traceData) const
 {
     return NoFault;
 }
@@ -59,7 +62,7 @@ Fault MemFenceMicro::execute(ExecContext *xc,
 // load-reserved
 std::string
 LoadReserved::generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const
+        Addr pc, const loader::SymbolTable *symtab) const
 {
     std::stringstream ss;
     ss << mnemonic;
@@ -69,14 +72,14 @@ LoadReserved::generateDisassembly(
         ss << "aq";
     if (RL)
         ss << "rl";
-    ss << ' ' << registerName(RegId(IntRegClass, RD)) << ", ("
-            << registerName(RegId(IntRegClass, RS1)) << ')';
+    ss << ' ' << registerName(intRegClass[RD]) << ", ("
+            << registerName(intRegClass[RS1]) << ')';
     return ss.str();
 }
 
 std::string
 LoadReservedMicro::generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const
+        Addr pc, const loader::SymbolTable *symtab) const
 {
     std::stringstream ss;
     ss << mnemonic << ' ' << registerName(destRegIdx(0)) << ", ("
@@ -87,7 +90,7 @@ LoadReservedMicro::generateDisassembly(
 // store-conditional
 std::string
 StoreCond::generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const
+        Addr pc, const loader::SymbolTable *symtab) const
 {
     std::stringstream ss;
     ss << mnemonic;
@@ -97,15 +100,15 @@ StoreCond::generateDisassembly(
         ss << "aq";
     if (RL)
         ss << "rl";
-    ss << ' ' << registerName(RegId(IntRegClass, RD)) << ", "
-            << registerName(RegId(IntRegClass, RS2)) << ", ("
-            << registerName(RegId(IntRegClass, RS1)) << ')';
+    ss << ' ' << registerName(intRegClass[RD]) << ", "
+            << registerName(intRegClass[RS2]) << ", ("
+            << registerName(intRegClass[RS1]) << ')';
     return ss.str();
 }
 
 std::string
 StoreCondMicro::generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const
+        Addr pc, const loader::SymbolTable *symtab) const
 {
     std::stringstream ss;
     ss << mnemonic << ' ' << registerName(destRegIdx(0)) << ", "
@@ -117,7 +120,7 @@ StoreCondMicro::generateDisassembly(
 // AMOs
 std::string
 AtomicMemOp::generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const
+        Addr pc, const loader::SymbolTable *symtab) const
 {
     std::stringstream ss;
     ss << mnemonic;
@@ -127,15 +130,15 @@ AtomicMemOp::generateDisassembly(
         ss << "aq";
     if (RL)
         ss << "rl";
-    ss << ' ' << registerName(RegId(IntRegClass, RD)) << ", "
-            << registerName(RegId(IntRegClass, RS2)) << ", ("
-            << registerName(RegId(IntRegClass, RS1)) << ')';
+    ss << ' ' << registerName(intRegClass[RD]) << ", "
+            << registerName(intRegClass[RS2]) << ", ("
+            << registerName(intRegClass[RS1]) << ')';
     return ss.str();
 }
 
 std::string
 AtomicMemOpMicro::generateDisassembly(
-        Addr pc, const Loader::SymbolTable *symtab) const
+        Addr pc, const loader::SymbolTable *symtab) const
 {
     std::stringstream ss;
     ss << mnemonic << ' ' << registerName(destRegIdx(0)) << ", "
@@ -144,4 +147,5 @@ AtomicMemOpMicro::generateDisassembly(
     return ss.str();
 }
 
-}
+} // namespace RiscvISA
+} // namespace gem5
