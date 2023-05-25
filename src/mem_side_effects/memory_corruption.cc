@@ -25,8 +25,8 @@ unsigned int count_bits_char(unsigned char x)
 MemoryCorruption::MemoryCorruption(const MemoryCorruptionParams &params) :
         SimObject(params),
         _hammer_threshold(params.hammer_threshold),
-        _rand_seed(params.rand_seed),
         _enable_corruption(params.enable_corruption),
+        _rand_seed(params.rand_seed),
         _layout_config(params.layout_config),
         _flip_polynomial(params.flip_polynomial),
         _mitigation(params.mitigation),
