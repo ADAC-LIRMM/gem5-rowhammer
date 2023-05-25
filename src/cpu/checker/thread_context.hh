@@ -98,7 +98,23 @@ class CheckerThreadContext : public ThreadContext
         assert(actual_ret == check_ret);
         return actual_ret;
     }
+    bool
+    open(MMUWatchPoint *e) override
+    {
+        [[maybe_unused]] bool check_ret = checkerTC->open(e);
+        bool actual_ret = actualTC->open(e);
+        assert(actual_ret == check_ret);
+        return actual_ret;
+    }
 
+    bool
+    close(MMUWatchPoint  *e) override
+    {
+        [[maybe_unused]] bool check_ret = checkerTC->close(e);
+        bool actual_ret = actualTC->close(e);
+        assert(actual_ret == check_ret);
+        return actual_ret;
+    }
     void
     scheduleInstCountEvent(Event *event, Tick count) override
     {

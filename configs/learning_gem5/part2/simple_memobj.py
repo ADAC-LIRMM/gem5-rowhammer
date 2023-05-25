@@ -50,7 +50,7 @@ system.mem_mode = "timing"  # Use timing accesses
 system.mem_ranges = [AddrRange("512MB")]  # Create an address range
 
 # Create a simple CPU
-system.cpu = X86TimingSimpleCPU()
+system.cpu = TimingSimpleCPU()
 
 # Create the simple memory object
 system.memobj = SimpleMemobj()

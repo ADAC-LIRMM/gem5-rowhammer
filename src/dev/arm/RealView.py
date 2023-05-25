@@ -412,32 +412,6 @@ class CoreTile2A15DCC(SubSystem):
         yield node
 
 
-class SysSecCtrl(BasicPioDevice):
-    """
-    System Security Control registers. Taken from:
-        Arm Neoverse N1 System Development Platform - TRM - Version 0.0
-        Document ID: 101489_0000_02_en
-    """
-
-    type = "SysSecCtrl"
-    cxx_header = "dev/arm/ssc.hh"
-    cxx_class = "gem5::SysSecCtrl"
-
-    ssc_dbgcfg_stat = Param.Unsigned(
-        0x00010000, "Debug authentication configuration status"
-    )
-    ssc_version = Param.Unsigned(0x100417B0, "Version register")
-    ssc_pid0 = Param.Unsigned(0x44, "Peripheral ID0 register")
-    ssc_pid1 = Param.Unsigned(0xB8, "Peripheral ID1 register")
-    ssc_pid2 = Param.Unsigned(0xB, "Peripheral ID2 register")
-    ssc_pid4 = Param.Unsigned(0x4, "Peripheral ID4 register")
-
-    compid0 = Param.Unsigned(0x0D, "Component ID0 register")
-    compid1 = Param.Unsigned(0xF0, "Component ID1 register")
-    compid2 = Param.Unsigned(0x5, "Component ID2 register")
-    compid3 = Param.Unsigned(0xB1, "Component ID3 register")
-
-
 class AmbaFake(AmbaPioDevice):
     type = "AmbaFake"
     cxx_header = "dev/arm/amba_fake.hh"
@@ -1224,55 +1198,115 @@ class VExpress_GEM5_Base(RealView):
 
            0x2e000000-0x2e007fff: Non-trusted SRAM
 
-           0x2f000000-0x2fffffff: PCI IO space
-           0x30000000-0x3fffffff: PCI config space
+Memory map:
+   0x00000000-0x03ffffff: Boot memory (CS0)
+   0x04000000-0x07ffffff: Trusted Memory/Reserved
+        0x04000000-0x0403FFFF: 256kB Trusted SRAM
+        0x06000000-0x07ffffff: 32MB Trusted DRAM
+   0x08000000-0x0bffffff: NOR FLASH0 (CS0 alias)
+   0x0c000000-0x0fffffff: NOR FLASH1 (Off-chip, CS4)
+   0x10000000-0x13ffffff: gem5-specific peripherals (Off-chip, CS5)
+       0x10000000-0x1000ffff: gem5 energy controller
+       0x10010000-0x1001ffff: gem5 pseudo-ops
+       0x10020000-0x1002ffff: gem5 MHU
 
-       0x40000000-0x7fffffff: Ext. AXI: Used as PCI memory
+   0x14000000-0x17ffffff: Reserved (Off-chip, PSRAM, CS1)
 
-       0x80000000-X: DRAM
+   0x18000000-0x1bffffff: Off-chip, Peripherals, CS2
+       0x18000000-0x19ffffff: VRAM
+       0x1a000000-0x1bffffff: Reserved
 
-    Interrupts:
-          0- 15: Software generated interrupts (SGIs)
-         16- 31: On-chip private peripherals (PPIs)
-            19   : generic_timer (virt sec EL2)
-            20   : generic_timer (phys sec EL2)
-            25   : vgic
-            26   : generic_timer (phys non-sec EL2)
-            27   : generic_timer (virt EL1)
-            28   : generic_timer (virt non-sec EL2)
-            29   : generic_timer (phys EL3)
-            30   : generic_timer (phys EL1)
-            31   : Reserved (Legacy IRQ)
-        32- 95: Mother board peripherals (SPIs)
-            32   : Watchdog (SP805)
-            33   : Reserved (IOFPGA SW int)
-            34-35: Reserved (SP804)
-            36   : RTC
-            37-40: uart0-uart3
-            41-42: Reserved (PL180)
-            43   : Reserved (AACI)
-            44-45: kmi0-kmi1
-            46   : Reserved (CLCD)
-            47   : Reserved (Ethernet)
-            48   : Reserved (USB)
-            56   : Trusted Watchdog (SP805)
-            57   : System timer0 (phys)
-            58   : System timer1 (phys)
-        95-255: On-chip interrupt sources (we use these for
-                gem5-specific devices, SPIs)
-             74    : VirtIO (gem5/FM extension)
-             75    : VirtIO (gem5/FM extension)
-             95    : HDLCD
-             96- 98: GPU (reserved)
-            100-103: PCI
-            130    : System Watchdog (SP805)
-       256-319: MSI frame 0 (gem5-specific, SPIs)
-       320-511: Unused
+   0x1c000000-0x1fffffff: Peripheral block 1 (Off-chip, CS3):
+       0x1c010000-0x1c01ffff: realview_io (VE system control regs.)
+       0x1c060000-0x1c06ffff: KMI0 (keyboard)
+       0x1c070000-0x1c07ffff: KMI1 (mouse)
+       0x1c090000-0x1c09ffff: UART0
+       0x1c0a0000-0x1c0affff: UART1
+       0x1c0b0000-0x1c0bffff: UART2
+       0x1c0c0000-0x1c0cffff: UART3
+       0x1c0f0000-0x1c0fffff: Watchdog (SP805)
+       0x1c130000-0x1c13ffff: VirtIO (gem5/FM extension)
+       0x1c140000-0x1c14ffff: VirtIO (gem5/FM extension)
+       0x1c170000-0x1c17ffff: RTC
+
+   0x20000000-0x3fffffff: On-chip peripherals:
+       0x2a430000-0x2a43ffff: System Counter (control)
+       0x2a490000-0x2a49ffff: Trusted Watchdog (SP805)
+       0x2a800000-0x2a800fff: System Counter (read)
+       0x2a810000-0x2a810fff: System Timer (control)
+
+       0x2a820000-0x2a820fff: System Timer (frame 0)
+       0x2a830000-0x2a830fff: System Timer (frame 1)
+
+       0x2b000000-0x2b00ffff: HDLCD
+
+       0x2b060000-0x2b060fff: System Watchdog (SP805)
+
+       0x2b400000-0x2b41ffff: SMMUv3
+
+       0x2c001000-0x2c001fff: GIC (distributor)
+       0x2c002000-0x2c003fff: GIC (CPU interface)
+       0x2c004000-0x2c005fff: vGIC (HV)
+       0x2c006000-0x2c007fff: vGIC (VCPU)
+       0x2c1c0000-0x2c1cffff: GICv2m MSI frame 0
+
+       0x2d000000-0x2d00ffff: GPU (reserved)
+
+       0x2e000000-0x2e007fff: Non-trusted SRAM
+
+       0x2f000000-0x2fffffff: PCI IO space
+       0x30000000-0x3fffffff: PCI config space
+
+   0x40000000-0x7fffffff: Ext. AXI: Used as PCI memory
+
+   0x80000000-0x100000000: DRAM1
+   0x880000000-X: DRAM2
+
+Interrupts:
+      0- 15: Software generated interrupts (SGIs)
+     16- 31: On-chip private peripherals (PPIs)
+        19   : generic_timer (virt sec EL2)
+        20   : generic_timer (phys sec EL2)
+        25   : vgic
+        26   : generic_timer (phys non-sec EL2)
+        27   : generic_timer (virt EL1)
+        28   : generic_timer (virt non-sec EL2)
+        29   : generic_timer (phys EL3)
+        30   : generic_timer (phys EL1)
+        31   : Reserved (Legacy IRQ)
+    32- 95: Mother board peripherals (SPIs)
+        32   : Watchdog (SP805)
+        33   : Reserved (IOFPGA SW int)
+        34-35: Reserved (SP804)
+        36   : RTC
+        37-40: uart0-uart3
+        41-42: Reserved (PL180)
+        43   : Reserved (AACI)
+        44-45: kmi0-kmi1
+        46   : Reserved (CLCD)
+        47   : Reserved (Ethernet)
+        48   : Reserved (USB)
+        56   : Trusted Watchdog (SP805)
+        57   : System timer0 (phys)
+        58   : System timer1 (phys)
+    95-255: On-chip interrupt sources (we use these for
+            gem5-specific devices, SPIs)
+         74    : VirtIO (gem5/FM extension)
+         75    : VirtIO (gem5/FM extension)
+         95    : HDLCD
+         96- 98: GPU (reserved)
+        100-103: PCI
+        130    : System Watchdog (SP805)
+   256-319: MSI frame 0 (gem5-specific, SPIs)
+   320-511: Unused
 
     """
 
-    # Everything above 2GiB is memory
-    _mem_regions = [AddrRange("2GiB", size="510GiB")]
+    # Everything above 2GiB is memory (but it is split in two part)
+    _mem_regions = [
+                    AddrRange(0x80000000, size='2GiB'),
+                    AddrRange(0x880000000, size='510GiB')
+                    ]
 
     _off_chip_ranges = [
         # CS1-CS5
@@ -1281,9 +1315,8 @@ class VExpress_GEM5_Base(RealView):
         AddrRange(0x2F000000, 0x80000000),
     ]
 
-    bootmem = SimpleMemory(
-        range=AddrRange(0, size="64MiB"), conf_table_reported=False
-    )
+    bootmem = SimpleMemory(range=AddrRange(0, size='64MiB'),
+                           conf_table_reported=False,read_only=True)
 
     # NOR flash, flash0
     flash0 = SimpleMemory(
@@ -1682,10 +1715,10 @@ class VExpress_GEM5_Foundation(VExpress_GEM5_Base):
         conf_device_bits=12,
         pci_pio_base=0x50000000,
         pci_mem_base=0x4000000000,
-        int_policy="ARM_PCI_INT_DEV",
-        int_base=100,
-        int_count=4,
-    )
+        int_policy="ARM_PCI_INT_DEV", int_base=100, int_count=4)
+    #TODO: preventing access from unsecure world to the trusted RAM
+    trusted_dram=SimpleMemory(range=AddrRange(0x6000000, size='32MB'),
+                        conf_table_reported=False,secure=True)
 
     def _on_chip_devices(self):
         return super()._on_chip_devices() + [self.gic]

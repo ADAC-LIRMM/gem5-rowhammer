@@ -69,6 +69,7 @@ DebugFlag('O3PipeView')
 DebugFlag('PCEvent')
 DebugFlag('Quiesce')
 DebugFlag('Mwait')
+DebugFlag('MMUWatch')
 
 CompoundFlag('ExecAll', [ 'ExecEnable', 'ExecCPSeq', 'ExecEffAddr',
     'ExecFaulting', 'ExecFetchSeq', 'ExecOpClass', 'ExecRegDelta',
@@ -82,6 +83,7 @@ CompoundFlag('ExecNoTicks', [ 'Exec', 'FmtTicksOff' ])
 
 Source('func_unit.cc')
 Source('pc_event.cc')
+Source('mmu_watch.cc')
 
 SimObject('FuncUnit.py', sim_objects=['OpDesc', 'FUDesc'], enums=['OpClass'])
 SimObject('StaticInstFlags.py', enums=['StaticInstFlags'])

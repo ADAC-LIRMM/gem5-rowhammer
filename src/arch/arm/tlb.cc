@@ -168,6 +168,7 @@ TLB::lookup(const Lookup &lookup_data)
             retval ? retval->pfn       : 0, retval ? retval->size  : 0,
             retval ? retval->pAddr(lookup_data.va) : 0,
             retval ? retval->ap        : 0,
+            retval ? retval->xn        : 0, retval ? retval->pxn        : 0,
             retval ? retval->ns        : 0, retval ? retval->nstid : 0,
             retval ? retval->global    : 0, retval ? retval->asid  : 0,
             retval ? retval->el        : 0);
@@ -241,10 +242,10 @@ void
 TLB::insert(TlbEntry &entry)
 {
     DPRINTF(TLB, "Inserting entry into TLB with pfn:%#x size:%#x vpn: %#x"
-            " asid:%d vmid:%d N:%d global:%d valid:%d nc:%d xn:%d"
+            " asid:%d vmid:%d N:%d global:%d valid:%d nc:%d xn:%d pxn:%d"
             " ap:%#x domain:%#x ns:%d nstid:%d isHyp:%d\n", entry.pfn,
             entry.size, entry.vpn, entry.asid, entry.vmid, entry.N,
-            entry.global, entry.valid, entry.nonCacheable, entry.xn,
+            entry.global, entry.valid, entry.nonCacheable, entry.xn, entry.pxn,
             entry.ap, static_cast<uint8_t>(entry.domain), entry.ns, entry.nstid,
             entry.isHyp);
 

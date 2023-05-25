@@ -302,9 +302,8 @@ class TLBIMVAA : public TLBIOp
 {
   public:
     TLBIMVAA(ExceptionLevel _targetEL, bool _secure,
-             Addr _addr, bool last_level)
-      : TLBIOp(_targetEL, _secure), addr(_addr), inHost(false),
-        lastLevel(last_level)
+             Addr _addr)
+      : TLBIOp(_targetEL, _secure), addr(_addr), inHost(false)
     {}
 
     void operator()(ThreadContext* tc) override;
@@ -313,7 +312,6 @@ class TLBIMVAA : public TLBIOp
 
     Addr addr;
     bool inHost;
-    bool lastLevel;
 };
 
 /** TLB Invalidate by VA */
@@ -321,9 +319,9 @@ class TLBIMVA : public TLBIOp
 {
   public:
     TLBIMVA(ExceptionLevel _targetEL, bool _secure,
-            Addr _addr, uint16_t _asid, bool last_level)
+            Addr _addr, uint16_t _asid)
       : TLBIOp(_targetEL, _secure), addr(_addr), asid(_asid),
-        inHost(false), lastLevel(last_level)
+        inHost(false)
     {}
 
     void operator()(ThreadContext* tc) override;
@@ -333,7 +331,6 @@ class TLBIMVA : public TLBIOp
     Addr addr;
     uint16_t asid;
     bool inHost;
-    bool lastLevel;
 };
 
 /** Instruction TLB Invalidate by VA */
@@ -342,7 +339,7 @@ class ITLBIMVA : public TLBIMVA
   public:
     ITLBIMVA(ExceptionLevel _targetEL, bool _secure,
              Addr _addr, uint16_t _asid)
-      : TLBIMVA(_targetEL, _secure, _addr, _asid, false)
+      : TLBIMVA(_targetEL, _secure, _addr, _asid)
     {}
 
     void broadcast(ThreadContext *tc) = delete;
@@ -358,7 +355,7 @@ class DTLBIMVA : public TLBIMVA
   public:
     DTLBIMVA(ExceptionLevel _targetEL, bool _secure,
              Addr _addr, uint16_t _asid)
-      : TLBIMVA(_targetEL, _secure, _addr, _asid, false)
+      : TLBIMVA(_targetEL, _secure, _addr, _asid)
     {}
 
     void broadcast(ThreadContext *tc) = delete;
@@ -372,9 +369,8 @@ class DTLBIMVA : public TLBIMVA
 class TLBIIPA : public TLBIOp
 {
   public:
-    TLBIIPA(ExceptionLevel _targetEL, bool _secure, Addr _addr,
-            bool last_level)
-      : TLBIOp(_targetEL, _secure), addr(_addr), lastLevel(last_level)
+    TLBIIPA(ExceptionLevel _targetEL, bool _secure, Addr _addr)
+      : TLBIOp(_targetEL, _secure), addr(_addr)
     {}
 
     void operator()(ThreadContext* tc) override;
@@ -395,11 +391,10 @@ class TLBIIPA : public TLBIOp
     TLBIMVAA
     makeStage2() const
     {
-        return TLBIMVAA(EL1, secureLookup, addr, lastLevel);
+        return TLBIMVAA(EL1, secureLookup, addr);
     }
 
     Addr addr;
-    bool lastLevel;
 };
 
 } // namespace ArmISA

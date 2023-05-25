@@ -59,10 +59,10 @@ def template AtomicMemOpRMWDeclare {{
         // Constructor
         %(class_name)sRMW(ExtMachInst machInst, %(class_name)s *_p);
 
-        Fault execute(ExecContext *, trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
+        Fault execute(ExecContext *, Trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          trace::InstRecord *) const override;
+                          Trace::InstRecord *) const override;
     };
 }};
 
@@ -91,10 +91,10 @@ def template LRSCMicroDeclare {{
         // Constructor
         %(class_name)sMicro(ExtMachInst machInst, %(class_name)s *_p);
 
-        Fault execute(ExecContext *, trace::InstRecord *) const override;
-        Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
+        Fault execute(ExecContext *, Trace::InstRecord *) const override;
+        Fault initiateAcc(ExecContext *, Trace::InstRecord *) const override;
         Fault completeAcc(PacketPtr, ExecContext *,
-                          trace::InstRecord *) const override;
+                          Trace::InstRecord *) const override;
     };
 }};
 
@@ -233,7 +233,7 @@ def template AtomicMemOpRMWConstructor {{
 def template LoadReservedExecute {{
     Fault
     %(class_name)s::%(class_name)sMicro::execute(
-        ExecContext *xc, trace::InstRecord *traceData) const
+        ExecContext *xc, Trace::InstRecord *traceData) const
     {
         Addr EA;
 
@@ -241,9 +241,6 @@ def template LoadReservedExecute {{
         %(op_rd)s;
         %(ea_code)s;
 
-        if (!alignmentOk(xc, EA, sizeof(Mem))) {
-            return std::make_shared<AddressFault>(EA, LOAD_ADDR_MISALIGNED);
-        }
         {
             Fault fault =
                 readMemAtomicLE(xc, traceData, EA, Mem, memAccessFlags);
@@ -260,7 +257,7 @@ def template LoadReservedExecute {{
 
 def template StoreCondExecute {{
     Fault %(class_name)s::%(class_name)sMicro::execute(ExecContext *xc,
-        trace::InstRecord *traceData) const
+        Trace::InstRecord *traceData) const
     {
         Addr EA;
         uint64_t result;
@@ -271,9 +268,6 @@ def template StoreCondExecute {{
 
         %(memacc_code)s;
 
-        if (!alignmentOk(xc, EA, sizeof(Mem))) {
-            return std::make_shared<AddressFault>(EA, STORE_ADDR_MISALIGNED);
-        }
         {
             Fault fault =
                 writeMemAtomicLE(xc, traceData, Mem, EA, memAccessFlags,
@@ -294,7 +288,7 @@ def template StoreCondExecute {{
 
 def template AtomicMemOpRMWExecute {{
     Fault %(class_name)s::%(class_name)sRMW::execute(ExecContext *xc,
-        trace::InstRecord *traceData) const
+        Trace::InstRecord *traceData) const
     {
         Addr EA;
 
@@ -305,9 +299,6 @@ def template AtomicMemOpRMWExecute {{
 
         assert(amo_op);
 
-        if (!alignmentOk(xc, EA, sizeof(Mem))) {
-            return std::make_shared<AddressFault>(EA, AMO_ADDR_MISALIGNED);
-        }
         {
             Fault fault =
                 amoMemAtomicLE(xc, traceData, Mem, EA, memAccessFlags, amo_op);
@@ -328,7 +319,7 @@ def template AtomicMemOpRMWExecute {{
 def template LoadReservedInitiateAcc {{
     Fault
     %(class_name)s::%(class_name)sMicro::initiateAcc(ExecContext *xc,
-        trace::InstRecord *traceData) const
+        Trace::InstRecord *traceData) const
     {
         Addr EA;
 
@@ -336,9 +327,6 @@ def template LoadReservedInitiateAcc {{
         %(op_rd)s;
         %(ea_code)s;
 
-        if (!alignmentOk(xc, EA, sizeof(Mem))) {
-            return std::make_shared<AddressFault>(EA, LOAD_ADDR_MISALIGNED);
-        }
         return initiateMemRead(xc, traceData, EA, Mem, memAccessFlags);
     }
 }};
@@ -346,7 +334,7 @@ def template LoadReservedInitiateAcc {{
 def template StoreCondInitiateAcc {{
     Fault
     %(class_name)s::%(class_name)sMicro::initiateAcc(ExecContext *xc,
-        trace::InstRecord *traceData) const
+        Trace::InstRecord *traceData) const
     {
         Addr EA;
 
@@ -355,9 +343,6 @@ def template StoreCondInitiateAcc {{
         %(ea_code)s;
         %(memacc_code)s;
 
-        if (!alignmentOk(xc, EA, sizeof(Mem))) {
-            return std::make_shared<AddressFault>(EA, STORE_ADDR_MISALIGNED);
-        }
         {
             Fault fault = writeMemTimingLE(xc, traceData, Mem, EA,
                 memAccessFlags, nullptr);
@@ -374,7 +359,7 @@ def template StoreCondInitiateAcc {{
 def template AtomicMemOpRMWInitiateAcc {{
     Fault
     %(class_name)s::%(class_name)sRMW::initiateAcc(ExecContext *xc,
-        trace::InstRecord *traceData) const
+        Trace::InstRecord *traceData) const
     {
         Addr EA;
 
@@ -385,9 +370,6 @@ def template AtomicMemOpRMWInitiateAcc {{
 
         assert(amo_op);
 
-        if (!alignmentOk(xc, EA, sizeof(Mem))) {
-            return std::make_shared<AddressFault>(EA, AMO_ADDR_MISALIGNED);
-        }
         return initiateMemAMO(xc, traceData, EA, Mem, memAccessFlags, amo_op);
     }
 }};
@@ -397,7 +379,7 @@ def template AtomicMemOpRMWInitiateAcc {{
 def template LoadReservedCompleteAcc {{
     Fault
     %(class_name)s::%(class_name)sMicro::completeAcc(PacketPtr pkt,
-        ExecContext *xc, trace::InstRecord *traceData) const
+        ExecContext *xc, Trace::InstRecord *traceData) const
     {
         %(op_decl)s;
         %(op_rd)s;
@@ -413,7 +395,7 @@ def template LoadReservedCompleteAcc {{
 
 def template StoreCondCompleteAcc {{
     Fault %(class_name)s::%(class_name)sMicro::completeAcc(Packet *pkt,
-          ExecContext *xc, trace::InstRecord *traceData) const
+          ExecContext *xc, Trace::InstRecord *traceData) const
     {
         %(op_dest_decl)s;
 
@@ -430,7 +412,7 @@ def template StoreCondCompleteAcc {{
 
 def template AtomicMemOpRMWCompleteAcc {{
     Fault %(class_name)s::%(class_name)sRMW::completeAcc(Packet *pkt,
-        ExecContext *xc, trace::InstRecord *traceData) const
+        ExecContext *xc, Trace::InstRecord *traceData) const
     {
         %(op_decl)s;
         %(op_rd)s;

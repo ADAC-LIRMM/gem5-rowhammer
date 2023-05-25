@@ -2,7 +2,11 @@
 
 #include <random>
 
-PARA::PARA(const PARAParams &params) :
+using namespace gem5;
+
+using namespace memory;
+
+PARA::PARA(const Params &params) :
     Mitigation(params),
     _p(params.probability),
     _rand_device(),

@@ -54,7 +54,7 @@ MemFenceMicro::generateDisassembly(
 }
 
 Fault MemFenceMicro::execute(ExecContext *xc,
-    trace::InstRecord *traceData) const
+    Trace::InstRecord *traceData) const
 {
     return NoFault;
 }

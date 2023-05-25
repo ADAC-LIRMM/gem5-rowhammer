@@ -116,14 +116,14 @@ void
 PM4PacketProcessor::mapKiq(Addr offset)
 {
     DPRINTF(PM4PacketProcessor, "Mapping KIQ\n");
-    newQueue((QueueDesc *)&kiq, offset, &kiq_pkt);
+    newQueue((QueueDesc *)&kiq, offset);
 }
 
 void
 PM4PacketProcessor::mapPq(Addr offset)
 {
     DPRINTF(PM4PacketProcessor, "Mapping PQ\n");
-    newQueue((QueueDesc *)&pq, offset, &pq_pkt);
+    newQueue((QueueDesc *)&pq, offset);
 }
 
 void
@@ -146,9 +146,8 @@ PM4PacketProcessor::newQueue(QueueDesc *mqd, Addr offset,
                   : QueueType::Compute;
     gpuDevice->setDoorbellType(offset, qt);
 
-    DPRINTF(PM4PacketProcessor, "New PM4 queue %d, base: %p offset: %p, me: "
-            "%d, pipe %d queue: %d size: %d\n", id, q->base(), q->offset(),
-            q->me(), q->pipe(), q->queue(), q->size());
+    DPRINTF(PM4PacketProcessor, "New PM4 queue %d, base: %p offset: %p\n",
+            id, q->base(), q->offset());
 }
 
 void
@@ -203,7 +202,9 @@ PM4PacketProcessor::decodeHeader(PM4Queue *q, PM4Header header)
       case IT_NOP: {
         DPRINTF(PM4PacketProcessor, "PM4 nop, count %p\n", header.count);
         DPRINTF(PM4PacketProcessor, "rptr %p wptr %p\n", q->rptr(), q->wptr());
-        if (header.count != 0x3fff) {
+        if (header.count == 0x3fff) {
+            q->fastforwardRptr();
+        } else {
             q->incRptr((header.count + 1) * sizeof(uint32_t));
         }
         decodeNext(q);
@@ -441,17 +442,12 @@ void
 PM4PacketProcessor::processSDMAMQD(PM4MapQueues *pkt, PM4Queue *q, Addr addr,
     SDMAQueueDesc *mqd, uint16_t vmid)
 {
-    uint32_t rlc_size = 4UL << bits(mqd->sdmax_rlcx_rb_cntl, 6, 1);
-    Addr rptr_wb_addr = mqd->sdmax_rlcx_rb_rptr_addr_hi;
-    rptr_wb_addr <<= 32;
-    rptr_wb_addr |= mqd->sdmax_rlcx_rb_rptr_addr_lo;
-
     DPRINTF(PM4PacketProcessor, "SDMAMQD: rb base: %#lx rptr: %#x/%#x wptr: "
-            "%#x/%#x ib: %#x/%#x size: %d ctrl: %#x rptr wb addr: %#lx\n",
-            mqd->rb_base, mqd->sdmax_rlcx_rb_rptr, mqd->sdmax_rlcx_rb_rptr_hi,
+            "%#x/%#x ib: %#x/%#x size: %d ctrl: %#x\n", mqd->rb_base,
+            mqd->sdmax_rlcx_rb_rptr, mqd->sdmax_rlcx_rb_rptr_hi,
             mqd->sdmax_rlcx_rb_wptr, mqd->sdmax_rlcx_rb_wptr_hi,
             mqd->sdmax_rlcx_ib_base_lo, mqd->sdmax_rlcx_ib_base_hi,
-            rlc_size, mqd->sdmax_rlcx_rb_cntl, rptr_wb_addr);
+            mqd->sdmax_rlcx_ib_size, mqd->sdmax_rlcx_rb_cntl);
 
     // Engine 2 points to SDMA0 while engine 3 points to SDMA1
     assert(pkt->engineSel == 2 || pkt->engineSel == 3);
@@ -459,8 +455,7 @@ PM4PacketProcessor::processSDMAMQD(PM4MapQueues *pkt, PM4Queue *q, Addr addr,
 
     // Register RLC queue with SDMA
     sdma_eng->registerRLCQueue(pkt->doorbellOffset << 2,
-                               mqd->rb_base << 8, rlc_size,
-                               rptr_wb_addr);
+                               mqd->rb_base << 8);
 
     // Register doorbell with GPU device
     gpuDevice->setSDMAEngine(pkt->doorbellOffset << 2, sdma_eng);
@@ -497,16 +492,14 @@ PM4PacketProcessor::releaseMemDone(PM4Queue *q, PM4ReleaseMem *pkt, Addr addr)
     DPRINTF(PM4PacketProcessor, "PM4 release_mem wrote %d to %p\n",
             pkt->dataLo, addr);
     if (pkt->intSelect == 2) {
-        DPRINTF(PM4PacketProcessor, "PM4 interrupt, id: %d ctx: %d, me: %d, "
-                "pipe: %d, queueSlot:%d\n", q->id(), pkt->intCtxId, q->me(),
-                q->pipe(), q->queue());
-
-        uint8_t ringId = 0;
-        if (q->id() != 0) {
-            ringId = (q->queue() << 4) | (q->me() << 2) | q->pipe();
-        }
+        DPRINTF(PM4PacketProcessor, "PM4 interrupt, ctx: %d, me: %d, pipe: "
+                "%d, queueSlot:%d\n", pkt->intCtxId, q->me(), q->pipe(),
+                q->queue());
+        // Rearranging the queue field of PM4MapQueues as the interrupt RingId
+        // format specified in PM4ReleaseMem pkt.
+        uint32_t ringId = (q->me() << 6) | (q->pipe() << 4) | q->queue();
         gpuDevice->getIH()->prepareInterruptCookie(pkt->intCtxId, ringId,
-                                            SOC15_IH_CLIENTID_GRBM_CP, CP_EOP);
+            SOC15_IH_CLIENTID_GRBM_CP, CP_EOP);
         gpuDevice->getIH()->submitInterruptCookie();
     }
 
@@ -790,9 +783,6 @@ PM4PacketProcessor::writeMMIO(PacketPtr pkt, Addr mmio_offset)
       case mmCP_HQD_PQ_WPTR_POLL_ADDR_HI:
         setHqdPqWptrPollAddrHi(pkt->getLE<uint32_t>());
         break;
-      case mmCP_HQD_PQ_CONTROL:
-        setHqdPqControl(pkt->getLE<uint32_t>());
-        break;
       case mmCP_HQD_IB_CONTROL:
         setHqdIbCtrl(pkt->getLE<uint32_t>());
         break;
@@ -912,12 +902,6 @@ void
 PM4PacketProcessor::setHqdPqWptrPollAddrHi(uint32_t data)
 {
     kiq.hqd_pq_wptr_poll_addr_hi = data;
-}
-
-void
-PM4PacketProcessor::setHqdPqControl(uint32_t data)
-{
-    kiq.hqd_pq_control = data;
 }
 
 void

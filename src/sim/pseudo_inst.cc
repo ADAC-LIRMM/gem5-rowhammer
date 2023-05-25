@@ -456,6 +456,30 @@ writefile(ThreadContext *tc, Addr vaddr, uint64_t len, uint64_t offset,
     return len;
 }
 
+uint64_t
+m5env(ThreadContext *tc, Addr vaddr, uint64_t len,
+            Addr varname_addr)
+{
+    DPRINTF(PseudoInst, "pseudo_inst::m5env(0x%x, 0x%x, 0x%x)\n",
+            vaddr, len, varname_addr);
+
+    std::string varname;
+    TranslatingPortProxy fs_proxy(tc);
+    SETranslatingPortProxy se_proxy(tc);
+    PortProxy &virt_proxy = FullSystem ? fs_proxy : se_proxy;
+
+    virt_proxy.readString(varname, varname_addr);
+    const std::map<std::string, std::string>& 
+     env= tc->getSystemPtr()->m5env;
+    if (env.find(varname)==env.end()) {
+        return 0;
+    }
+
+    std::string out(env.at(varname));
+    virt_proxy.writeBlob(vaddr, (char*)(out.c_str()), out.length());
+    return (uint64_t)out.length();
+}
+
 void
 debugbreak(ThreadContext *tc)
 {

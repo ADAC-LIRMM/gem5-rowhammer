@@ -37,16 +37,6 @@ from m5.objects import (
 from .abstract_node import TriggerMessageBuffer
 
 
-class MemCtrlMessageBuffer(MessageBuffer):
-    """
-    MessageBuffer exchanging messages with the memory
-    These buffers should also not be affected by the Ruby tester randomization.
-    """
-
-    randomization = "disabled"
-    ordered = True
-
-
 class MemoryController(Memory_Controller):
     """A controller that connects to memory"""
 
@@ -72,16 +62,9 @@ class MemoryController(Memory_Controller):
 
     def connectQueues(self, network):
         self.triggerQueue = TriggerMessageBuffer()
-        self.responseFromMemory = MemCtrlMessageBuffer()
-        self.requestToMemory = MemCtrlMessageBuffer()
+        self.responseFromMemory = MessageBuffer()
+        self.requestToMemory = MessageBuffer(ordered=True)
         self.reqRdy = TriggerMessageBuffer()
-
-        # The Memory_Controller implementation deallocates the TBE for
-        # write requests when they are queue up to memory. The size of this
-        # buffer must be limited to prevent unlimited outstanding writes.
-        self.requestToMemory.buffer_size = (
-            int(self.to_memory_controller_latency) + 1
-        )
 
         self.reqOut = MessageBuffer()
         self.rspOut = MessageBuffer()

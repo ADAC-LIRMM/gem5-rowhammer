@@ -79,6 +79,17 @@ cpu_types = {
     constants.sparc_tag: ("timing", "atomic"),
 }
 
+# We only want to test x86, arm, and riscv on quick. Mips and sparc will be
+# left for long.
+os_length = {
+    constants.vega_x86_tag: constants.quick_tag,
+    constants.arm_tag: constants.quick_tag,
+    constants.mips_tag: constants.long_tag,
+    constants.riscv_tag: constants.quick_tag,
+    constants.sparc_tag: constants.long_tag,
+}
+
+
 if config.bin_path:
     resource_path = config.bin_path
 else:
@@ -106,9 +117,9 @@ def verify_config(isa, binary, cpu, hosts, verifier, input):
             isa_str_map[isa],
         ]
         + input,
-        valid_isas=(constants.all_compiled_tag,),
+        valid_isas=(isa,),
         valid_hosts=hosts,
-        length=constants.quick_tag,
+        length=os_length[isa],
     )
 
 

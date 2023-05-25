@@ -37,7 +37,7 @@
 # Need to have CROSS_COMPILE set to /path/to/bin/arm-unknown-linux-gnu-
 # or have arm-unknown-linux-gnu in your path
 
-CROSS_COMPILE?=arm-linux-gnueabi-
+CROSS_COMPILE?=arm-linux-gnueabihf-
 
 CC=$(CROSS_COMPILE)gcc
 CPP=$(CROSS_COMPILE)g++

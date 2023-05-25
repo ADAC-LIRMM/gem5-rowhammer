@@ -174,17 +174,6 @@ class EnumList(ObjectList):
             if not key.startswith("Num_"):
                 self._sub_classes[key] = value
 
-<<<<<<< HEAD
-rp_list = ObjectList(getattr(m5.objects, 'BaseReplacementPolicy', None))
-bp_list = ObjectList(getattr(m5.objects, 'BranchPredictor', None))
-cpu_list = CPUList(getattr(m5.objects, 'BaseCPU', None))
-hwp_list = ObjectList(getattr(m5.objects, 'BasePrefetcher', None))
-indirect_bp_list = ObjectList(getattr(m5.objects, 'IndirectPredictor', None))
-mem_list = ObjectList(getattr(m5.objects, 'AbstractMemory', None))
-dram_addr_map_list = EnumList(getattr(m5.internal.params, 'enum_AddrMap',
-                                      None))
-rh_mitigation_list = ObjectList(getattr(m5.objects, 'Mitigation', None))
-=======
 
 rp_list = ObjectList(getattr(m5.objects, "BaseReplacementPolicy", None))
 bp_list = ObjectList(getattr(m5.objects, "BranchPredictor", None))
@@ -195,7 +184,7 @@ mem_list = ObjectList(getattr(m5.objects, "AbstractMemory", None))
 dram_addr_map_list = EnumList(
     getattr(m5.internal.params, "enum_AddrMap", None)
 )
->>>>>>> 5fa484e2e02604ad3a5bf01f35ad1f97ca6d17b8
+rh_mitigation_list = ObjectList(getattr(m5.objects, 'Mitigation', None))
 
 # Platform aliases. The platforms listed here might not be compiled,
 # we make sure they exist before we add them to the platform list.

@@ -4,7 +4,8 @@
 #include "base/trace.hh"
 #include "debug/MemCorruptMitigation.hh"
 
-//TODO params/Mitigation, SimObject(params)
+using namespace gem5;
+using namespace memory;
 
 Mitigation::Mitigation(const Params &params) : SimObject(params)
 {

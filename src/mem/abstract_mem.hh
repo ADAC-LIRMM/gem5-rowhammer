@@ -116,7 +116,9 @@ class AbstractMemory : public ClockedObject
 
     // Pointer to host memory used to implement this memory
     uint8_t* pmemAddr;
-
+    //memory security : block unsecure transation at a functional level if asserted.
+    bool secure;
+    bool read_only;
     // Backdoor to access this memory.
     MemBackdoor backdoor;
 

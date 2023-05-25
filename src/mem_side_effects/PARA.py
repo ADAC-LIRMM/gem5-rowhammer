@@ -4,6 +4,6 @@ from .Mitigation import Mitigation
 class PARA(Mitigation):
     type = 'PARA'
     cxx_header = "mem_side_effects/para.hh"
-    cxx_class = "PARA"
+    cxx_class = "gem5::memory::PARA"
 
     probability = Param.Float(0.001,"neighbor refresh probability")

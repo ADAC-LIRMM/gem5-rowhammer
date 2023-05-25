@@ -20,6 +20,8 @@ namespace ramulator
     class Request;
     class Gem5Wrapper;
 }
+using namespace gem5;
+using namespace memory;
 
 class Ramulator : public AbstractMemory
 {

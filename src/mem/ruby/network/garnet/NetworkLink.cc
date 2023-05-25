@@ -119,12 +119,6 @@ NetworkLink::resetStats()
     m_link_utilized = 0;
 }
 
-bool
-NetworkLink::functionalRead(Packet *pkt, WriteMask &mask)
-{
-    return linkBuffer.functionalRead(pkt, mask);
-}
-
 uint32_t
 NetworkLink::functionalWrite(Packet *pkt)
 {

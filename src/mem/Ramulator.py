@@ -1,13 +1,12 @@
 # Authors: Minesh Patel
 
 from m5.params import *
-from m5.objects.AbstractMemory import AbstractMemory
+from m5.objects.AbstractMemory import *
 
 # A wrapper for Ramulator
 class Ramulator(AbstractMemory):
     type = 'Ramulator'
     cxx_header = "mem/ramulator.hh"
-    cxx_class = "Ramulator"
 
     # A single port for now
     port = SlavePort("Slave port")
@@ -19,7 +18,7 @@ class Ramulator(AbstractMemory):
     # systemConfigFile = Param.String("system.ini.example",
     #                                 "Memory organisation configuration file")
     ramulatorConfigFile = Param.String("system.ini.example",
-        "Memory organisation configuration file")
+    "Memory organisation configuration file")
 
     filePath = Param.String("ext/ramulator/Ramulator/",
                             "Directory to prepend to file names")

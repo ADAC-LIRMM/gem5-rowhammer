@@ -520,7 +520,7 @@ Process::absolutePath(const std::string &filename, bool host_filesystem)
     }
 
     // Add a trailing '/' if the current working directory did not have one.
-    path_base = normalize(path_base);
+    normalize(path_base);
 
     // Append the filename onto the current working path.
     auto absolute_path = path_base + filename;
@@ -529,7 +529,7 @@ Process::absolutePath(const std::string &filename, bool host_filesystem)
 }
 
 Process *
-ProcessParams::create() const
+ProcessParams::create()
 {
     // If not specified, set the executable parameter equal to the
     // simulated system's zeroth command line parameter

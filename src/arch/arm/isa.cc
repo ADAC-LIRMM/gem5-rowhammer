@@ -79,7 +79,8 @@ RegClass floatRegClass(FloatRegClass, FloatRegClassName, 0, debug::FloatRegs);
 } // anonymous namespace
 
 ISA::ISA(const Params &p) : BaseISA(p), system(NULL),
-    _decoderFlavor(p.decoderFlavor), pmu(p.pmu), impdefAsNop(p.impdef_nop)
+    _decoderFlavor(p.decoderFlavor), pmu(p.pmu), impdefAsNop(p.impdef_nop),
+    afterStartup(false)
 {
     _regClasses.push_back(&flatIntRegClass);
     _regClasses.push_back(&floatRegClass);
@@ -512,6 +513,8 @@ ISA::startup()
             tc->setHtmCheckpointPtr(std::move(cpt));
         }
     }
+
+    afterStartup = true;
 }
 
 void
@@ -524,10 +527,15 @@ ISA::setupThreadContext()
 
     selfDebug->init(tc);
 
-    if (auto gicv3_ifc = getGICv3CPUInterface(tc); gicv3_ifc) {
-        gicv3_ifc->setISA(this);
-        gicv3_ifc->setThreadContext(tc);
-    }
+    Gicv3 *gicv3 = dynamic_cast<Gicv3 *>(system->getGIC());
+    if (!gicv3)
+        return;
+
+    if (!gicv3CpuInterface)
+        gicv3CpuInterface.reset(gicv3->getCPUInterface(tc->contextId()));
+
+    gicv3CpuInterface->setISA(this);
+    gicv3CpuInterface->setThreadContext(tc);
 }
 
 void
@@ -788,7 +796,7 @@ ISA::readMiscReg(RegIndex idx)
 
             // Security Extensions may limit the readability of CPACR
             if (release->has(ArmExtension::SECURITY)) {
-                scr = readMiscRegNoEffect(MISCREG_SCR_EL3);
+                scr = readMiscRegNoEffect(MISCREG_SCR);
                 cpsr = readMiscRegNoEffect(MISCREG_CPSR);
                 if (scr.ns && (cpsr.mode != MODE_MON) && ELIs32(tc, EL3)) {
                     NSACR nsacr = readMiscRegNoEffect(MISCREG_NSACR);
@@ -814,7 +822,7 @@ ISA::readMiscReg(RegIndex idx)
       case MISCREG_REVIDR:  // not implemented, so alias MIDR
       case MISCREG_MIDR:
         cpsr = readMiscRegNoEffect(MISCREG_CPSR);
-        scr  = readMiscRegNoEffect(MISCREG_SCR_EL3);
+        scr  = readMiscRegNoEffect(MISCREG_SCR);
         if ((cpsr.mode == MODE_HYP) || isSecure(tc)) {
             return readMiscRegNoEffect(idx);
         } else {
@@ -970,6 +978,14 @@ ISA::readMiscReg(RegIndex idx)
       case MISCREG_DBGDSCRint:
         return readMiscRegNoEffect(MISCREG_DBGDSCRint);
       case MISCREG_ISR:
+        {
+            auto ic = dynamic_cast<ArmISA::Interrupts *>(
+                    tc->getCpuPtr()->getInterruptController(tc->threadId()));
+            return ic->getISR(
+                readMiscRegNoEffect(MISCREG_HCR),
+                readMiscRegNoEffect(MISCREG_CPSR),
+                readMiscRegNoEffect(MISCREG_SCR));
+        }
       case MISCREG_ISR_EL1:
         {
             auto ic = dynamic_cast<ArmISA::Interrupts *>(
@@ -1088,7 +1104,7 @@ ISA::setMiscReg(RegIndex idx, RegVal val)
         if (cpsr.pan != old_cpsr.pan || cpsr.il != old_cpsr.il) {
             getMMUPtr(tc)->invalidateMiscReg();
         }
-
+        //CPU context update
         DPRINTF(Arm, "Updating CPSR from %#x to %#x f:%d i:%d a:%d mode:%#x\n",
                 miscRegs[idx], cpsr, cpsr.f, cpsr.i, cpsr.a, cpsr.mode);
         PCState pc = tc->pcState().as<PCState>();
@@ -1154,7 +1170,7 @@ ISA::setMiscReg(RegIndex idx, RegVal val)
 
                 // Security Extensions may limit the writability of CPACR
                 if (release->has(ArmExtension::SECURITY)) {
-                    scr = readMiscRegNoEffect(MISCREG_SCR_EL3);
+                    scr = readMiscRegNoEffect(MISCREG_SCR);
                     CPSR cpsr = readMiscRegNoEffect(MISCREG_CPSR);
                     if (scr.ns && (cpsr.mode != MODE_MON) && ELIs32(tc, EL3)) {
                         NSACR nsacr = readMiscRegNoEffect(MISCREG_NSACR);
@@ -1629,7 +1645,7 @@ ISA::setMiscReg(RegIndex idx, RegVal val)
           case MISCREG_SCTLR:
             {
                 DPRINTF(MiscRegs, "Writing SCTLR: %#x\n", newVal);
-                scr = readMiscRegNoEffect(MISCREG_SCR_EL3);
+                scr = readMiscRegNoEffect(MISCREG_SCR);
 
                 MiscRegIndex sctlr_idx;
                 if (release->has(ArmExtension::SECURITY) &&
@@ -1967,13 +1983,9 @@ ISA::setMiscReg(RegIndex idx, RegVal val)
           case MISCREG_ZCR_EL3:
           case MISCREG_ZCR_EL2:
           case MISCREG_ZCR_EL1:
-            // Set the value here as we need to update the regs before
-            // reading them back in getCurSveVecLenInBits to avoid
-            // setting stale vector lengths in the decoder.
-            setMiscRegNoEffect(idx, newVal);
             tc->getDecoderPtr()->as<Decoder>().setSveLen(
                     (getCurSveVecLenInBits() >> 7) - 1);
-            return;
+            break;
         }
         setMiscRegNoEffect(idx, newVal);
     }
@@ -2003,26 +2015,8 @@ ISA::getGenericTimer()
 BaseISADevice &
 ISA::getGICv3CPUInterface()
 {
-    if (gicv3CpuInterface)
-        return *gicv3CpuInterface.get();
-
-    auto gicv3_ifc = getGICv3CPUInterface(tc);
-    panic_if(!gicv3_ifc, "The system does not have a GICv3 irq controller\n");
-    gicv3CpuInterface.reset(gicv3_ifc);
-
+    panic_if(!gicv3CpuInterface, "GICV3 cpu interface is not registered!");
     return *gicv3CpuInterface.get();
-}
-
-BaseISADevice*
-ISA::getGICv3CPUInterface(ThreadContext *tc)
-{
-    assert(system);
-    Gicv3 *gicv3 = dynamic_cast<Gicv3 *>(system->getGIC());
-    if (gicv3) {
-        return gicv3->getCPUInterface(tc->contextId());
-    } else {
-        return nullptr;
-    }
 }
 
 bool
@@ -2191,7 +2185,7 @@ ISA::addressTranslation(MMU::ArmTranslationType tran_type,
     if (fault == NoFault) {
         Addr paddr = req->getPaddr();
         TTBCR ttbcr = readMiscRegNoEffect(MISCREG_TTBCR);
-        HCR hcr = readMiscRegNoEffect(MISCREG_HCR_EL2);
+        HCR hcr = readMiscRegNoEffect(MISCREG_HCR);
 
         uint8_t max_paddr_bit = 0;
         if (release->has(ArmExtension::LPAE) &&

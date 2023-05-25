@@ -51,8 +51,7 @@ class FsLinux : public KernelWorkload
     setSystem(System *sys) override
     {
         KernelWorkload::setSystem(sys);
-        gdb = BaseRemoteGDB::build<RemoteGDB>(
-                params().remote_gdb_port, system);
+        gdb = BaseRemoteGDB::build<RemoteGDB>(system);
     }
 
     ByteOrder byteOrder() const override { return ByteOrder::little; }

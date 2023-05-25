@@ -38,7 +38,7 @@ from arm_generic import *
 import switcheroo
 
 root = LinuxArmFSSwitcheroo(
-    cpu_classes=(ArmNonCachingSimpleCPU, ArmTimingSimpleCPU)
+    cpu_classes=(NonCachingSimpleCPU, TimingSimpleCPU)
 ).create_root()
 
 # Setup a custom test method that uses the switcheroo tester that

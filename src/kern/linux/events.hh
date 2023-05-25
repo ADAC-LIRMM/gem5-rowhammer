@@ -66,7 +66,7 @@ class DebugPrintk : public Base
 {
   public:
     using Base::Base;
-    void
+    bool
     process(ThreadContext *tc) override
     {
         if (debug::DebugPrintf) {
@@ -79,7 +79,7 @@ class DebugPrintk : public Base
             invokeSimcall<ABI>(tc, func);
             DPRINTFN("%s", str);
         }
-        Base::process(tc);
+        return Base::process(tc);
     }
 };
 
@@ -101,7 +101,7 @@ class DmesgDump : public PCEvent
               const std::string &_fname) :
         PCEvent(s, desc, addr), fname(_fname)
     {}
-    void process(ThreadContext *tc) override;
+    bool process(ThreadContext *tc) override;
 };
 
 /**
@@ -122,7 +122,7 @@ class KernelPanic : public PCEvent
                 const std::string &_fname) :
         PCEvent(s, desc, addr), fname(_fname)
     {}
-    void process(ThreadContext *tc) override;
+    bool process(ThreadContext *tc) override;
 };
 
 void onUDelay(ThreadContext *tc, uint64_t div, uint64_t mul, uint64_t time);
@@ -158,7 +158,7 @@ class SkipUDelay : public Base
         Base(s, desc, addr), argDivToNs(div), argMultToNs(mult)
     {}
 
-    void
+    bool
     process(ThreadContext *tc) override
     {
         // Use Addr since it's handled specially and will act as a natively
@@ -168,7 +168,7 @@ class SkipUDelay : public Base
             onUDelay(tc, argDivToNs, argMultToNs, time);
         };
         invokeSimcall<ABI>(tc, call_udelay);
-        Base::process(tc);
+        return Base::process(tc);
     }
 };
 

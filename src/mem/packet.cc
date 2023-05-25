@@ -214,10 +214,6 @@ MemCmd::commandInfo[] =
     { {IsResponse, IsError}, InvalidCmd, "InvalidDestError" },
     /* BadAddressError   -- memory address invalid */
     { {IsResponse, IsError}, InvalidCmd, "BadAddressError" },
-    /* ReadError -- packet dest unable to fulfill read command */
-    { {IsRead, IsResponse, IsError}, InvalidCmd, "ReadError" },
-    /* WriteError -- packet dest unable to fulfill write command */
-    { {IsWrite, IsResponse, IsError}, InvalidCmd, "WriteError" },
     /* FunctionalReadError */
     { {IsRead, IsResponse, IsError}, InvalidCmd, "FunctionalReadError" },
     /* FunctionalWriteError */
@@ -253,8 +249,10 @@ Packet::trySatisfyFunctional(Printable *obj, Addr addr, bool is_secure, int size
     const Addr func_end   = getAddr() + getSize() - 1;
     const Addr val_start  = addr;
     const Addr val_end    = val_start + size - 1;
+    const bool from_gdb   = req->getFlags().isSet(Request::GDB_ACCESS);
 
-    if (is_secure != _isSecure || func_start > val_end ||
+    //GDB circumvent memory security
+    if ((is_secure != _isSecure && !from_gdb) || func_start > val_end ||
         val_start > func_end) {
         // no intersection
         return false;

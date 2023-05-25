@@ -33,8 +33,6 @@
 
 #include "arch/amdgpu/vega/pagetable_walker.hh"
 #include "arch/generic/mmu.hh"
-#include "debug/SDMAData.hh"
-#include "debug/SDMAEngine.hh"
 #include "dev/amdgpu/interrupt_handler.hh"
 #include "dev/amdgpu/sdma_commands.hh"
 #include "dev/amdgpu/sdma_mmio.hh"
@@ -161,8 +159,7 @@ SDMAEngine::translate(Addr vaddr, Addr size)
 }
 
 void
-SDMAEngine::registerRLCQueue(Addr doorbell, Addr rb_base, uint32_t size,
-                             Addr rptr_wb_addr)
+SDMAEngine::registerRLCQueue(Addr doorbell, Addr rb_base)
 {
     // Get first free RLC
     if (!rlc0.valid()) {
@@ -172,19 +169,19 @@ SDMAEngine::registerRLCQueue(Addr doorbell, Addr rb_base, uint32_t size,
         rlc0.base(rb_base);
         rlc0.rptr(0);
         rlc0.wptr(0);
-        rlc0.rptrWbAddr(rptr_wb_addr);
         rlc0.processing(false);
-        rlc0.size(size);
+        // TODO: size - I think pull from MQD 2^rb_cntrl[6:1]-1
+        rlc0.size(1024*1024);
     } else if (!rlc1.valid()) {
         DPRINTF(SDMAEngine, "Doorbell %lx mapped to RLC1\n", doorbell);
         rlcInfo[1] = doorbell;
         rlc1.valid(true);
         rlc1.base(rb_base);
-        rlc1.rptr(0);
-        rlc1.wptr(0);
-        rlc1.rptrWbAddr(rptr_wb_addr);
+        rlc1.rptr(1);
+        rlc1.wptr(1);
         rlc1.processing(false);
-        rlc1.size(size);
+        // TODO: size - I think pull from MQD 2^rb_cntrl[6:1]-1
+        rlc1.size(1024*1024);
     } else {
         panic("No free RLCs. Check they are properly unmapped.");
     }
@@ -292,17 +289,6 @@ SDMAEngine::decodeNext(SDMAQueue *q)
                 { decodeHeader(q, header); });
         dmaReadVirt(q->rptr(), sizeof(uint32_t), cb, &cb->dmaBuffer);
     } else {
-        // The driver expects the rptr to be written back to host memory
-        // periodically. In simulation, we writeback rptr after each burst of
-        // packets from a doorbell, rather than using the cycle count which
-        // is not accurate in all simulation settings (e.g., KVM).
-        DPRINTF(SDMAEngine, "Writing rptr %#lx back to host addr %#lx\n",
-                q->globalRptr(), q->rptrWbAddr());
-        if (q->rptrWbAddr()) {
-            auto cb = new DmaVirtCallback<uint64_t>(
-                [ = ](const uint64_t &) { }, q->globalRptr());
-            dmaWriteVirt(q->rptrWbAddr(), sizeof(Addr), cb, &cb->dmaBuffer);
-        }
         q->processing(false);
         if (q->parent()) {
             DPRINTF(SDMAEngine, "SDMA switching queues\n");
@@ -601,22 +587,8 @@ SDMAEngine::copy(SDMAQueue *q, sdmaCopy *pkt)
         DPRINTF(SDMAEngine, "Copying from device address %#lx\n", device_addr);
         auto cb = new EventFunctionWrapper(
             [ = ]{ copyReadData(q, pkt, dmaBuffer); }, name());
-
-        // Copy the minimum page size at a time in case the physical addresses
-        // are not contiguous.
-        ChunkGenerator gen(pkt->source, pkt->count, AMDGPU_MMHUB_PAGE_SIZE);
-        for (; !gen.done(); gen.next()) {
-            Addr chunk_addr = getDeviceAddress(gen.addr());
-            assert(chunk_addr);
-
-            DPRINTF(SDMAEngine, "Copying chunk of %d bytes from %#lx (%#lx)\n",
-                    gen.size(), gen.addr(), chunk_addr);
-
-            gpuDevice->getMemMgr()->readRequest(chunk_addr, dmaBuffer,
-                                                gen.size(), 0,
-                                                gen.last() ? cb : nullptr);
-            dmaBuffer += gen.size();
-        }
+        gpuDevice->getMemMgr()->readRequest(device_addr, dmaBuffer, pkt->count,
+                                            0, cb);
     } else {
         auto cb = new DmaVirtCallback<uint64_t>(
             [ = ] (const uint64_t &) { copyReadData(q, pkt, dmaBuffer); });
@@ -629,16 +601,13 @@ void
 SDMAEngine::copyReadData(SDMAQueue *q, sdmaCopy *pkt, uint8_t *dmaBuffer)
 {
     // lastly we write read data to the destination address
-    uint64_t *dmaBuffer64 = reinterpret_cast<uint64_t *>(dmaBuffer);
-
-    DPRINTF(SDMAEngine, "Copy packet last/first qwords:\n");
-    DPRINTF(SDMAEngine, "First: %016lx\n", dmaBuffer64[0]);
-    DPRINTF(SDMAEngine, "Last:  %016lx\n", dmaBuffer64[(pkt->count/8)-1]);
-
-    DPRINTF(SDMAData, "Copy packet data:\n");
+    DPRINTF(SDMAEngine, "Copy packet data:\n");
+    uint64_t *dmaBuffer64 = new uint64_t[pkt->count/8];
+    memcpy(dmaBuffer64, dmaBuffer, pkt->count);
     for (int i = 0; i < pkt->count/8; ++i) {
-        DPRINTF(SDMAData, "%016lx\n", dmaBuffer64[i]);
+        DPRINTF(SDMAEngine, "%016lx\n", dmaBuffer64[i]);
     }
+    delete [] dmaBuffer64;
 
     Addr device_addr = getDeviceAddress(pkt->dest);
     // Write read data to the destination address then call the copyDone method
@@ -646,23 +615,8 @@ SDMAEngine::copyReadData(SDMAQueue *q, sdmaCopy *pkt, uint8_t *dmaBuffer)
         DPRINTF(SDMAEngine, "Copying to device address %#lx\n", device_addr);
         auto cb = new EventFunctionWrapper(
             [ = ]{ copyDone(q, pkt, dmaBuffer); }, name());
-
-        // Copy the minimum page size at a time in case the physical addresses
-        // are not contiguous.
-        ChunkGenerator gen(pkt->dest, pkt->count, AMDGPU_MMHUB_PAGE_SIZE);
-        for (; !gen.done(); gen.next()) {
-            Addr chunk_addr = getDeviceAddress(gen.addr());
-            assert(chunk_addr);
-
-            DPRINTF(SDMAEngine, "Copying chunk of %d bytes to %#lx (%#lx)\n",
-                    gen.size(), gen.addr(), chunk_addr);
-
-            gpuDevice->getMemMgr()->writeRequest(chunk_addr, dmaBuffer,
-                                                 gen.size(), 0,
-                                                 gen.last() ? cb : nullptr);
-
-            dmaBuffer += gen.size();
-        }
+        gpuDevice->getMemMgr()->writeRequest(device_addr, dmaBuffer,
+                                             pkt->count, 0, cb);
     } else {
         auto cb = new DmaVirtCallback<uint64_t>(
             [ = ] (const uint64_t &) { copyDone(q, pkt, dmaBuffer); });
@@ -725,16 +679,11 @@ SDMAEngine::trap(SDMAQueue *q, sdmaTrap *pkt)
 {
     q->incRptr(sizeof(sdmaTrap));
 
-    DPRINTF(SDMAEngine, "Trap contextId: %p\n", pkt->intrContext);
+    DPRINTF(SDMAEngine, "Trap contextId: %p rbRptr: %p ibOffset: %p\n",
+            pkt->contextId, pkt->rbRptr, pkt->ibOffset);
 
-    uint32_t ring_id = 0;
-    assert(page.processing() ^ gfx.processing());
-    if (page.processing()) {
-        ring_id = 3;
-    }
-
-    gpuDevice->getIH()->prepareInterruptCookie(pkt->intrContext, ring_id,
-                                               getIHClientId(), TRAP_ID);
+    gpuDevice->getIH()->prepareInterruptCookie(pkt->contextId, 0,
+            getIHClientId(), TRAP_ID);
     gpuDevice->getIH()->submitInterruptCookie();
 
     delete pkt;
@@ -1170,7 +1119,6 @@ SDMAEngine::setGfxRptrLo(uint32_t data)
 {
     gfxRptr = insertBits(gfxRptr, 31, 0, 0);
     gfxRptr |= data;
-    gfx.rptrWbAddr(getGARTAddr(gfxRptr));
 }
 
 void
@@ -1178,7 +1126,6 @@ SDMAEngine::setGfxRptrHi(uint32_t data)
 {
     gfxRptr = insertBits(gfxRptr, 63, 32, 0);
     gfxRptr |= ((uint64_t)data) << 32;
-    gfx.rptrWbAddr(getGARTAddr(gfxRptr));
 }
 
 void
@@ -1250,7 +1197,6 @@ SDMAEngine::setPageRptrLo(uint32_t data)
 {
     pageRptr = insertBits(pageRptr, 31, 0, 0);
     pageRptr |= data;
-    page.rptrWbAddr(getGARTAddr(pageRptr));
 }
 
 void
@@ -1258,7 +1204,6 @@ SDMAEngine::setPageRptrHi(uint32_t data)
 {
     pageRptr = insertBits(pageRptr, 63, 32, 0);
     pageRptr |= ((uint64_t)data) << 32;
-    page.rptrWbAddr(getGARTAddr(pageRptr));
 }
 
 void

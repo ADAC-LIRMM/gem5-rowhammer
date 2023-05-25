@@ -431,36 +431,19 @@ PhysicalMemory::unserialize(CheckpointIn &cp)
 
 }
 
-void
-PhysicalMemory::unserializeStore(CheckpointIn &cp)
+void PhysicalMemory::loadMemoryData(unsigned int store_id, std::string filepath)
 {
     const uint32_t chunk_size = 16384;
 
-    unsigned int store_id;
-    UNSERIALIZE_SCALAR(store_id);
-
-    std::string filename;
-    UNSERIALIZE_SCALAR(filename);
-    std::string filepath = cp.getCptDir() + "/" + filename;
-
-    // mmap memoryfile
     gzFile compressed_mem = gzopen(filepath.c_str(), "rb");
     if (compressed_mem == NULL)
-        fatal("Can't open physical memory checkpoint file '%s'", filename);
+        fatal("Can't open physical memory checkpoint file '%s'", filepath);
 
+    if (store_id >= backingStore.size())
+        fatal("storeid %d does not exist.", store_id);
     // we've already got the actual backing store mapped
     uint8_t* pmem = backingStore[store_id].pmem;
     AddrRange range = backingStore[store_id].range;
-
-    long range_size;
-    UNSERIALIZE_SCALAR(range_size);
-
-    DPRINTF(Checkpoint, "Unserializing physical memory %s with size %d\n",
-            filename, range_size);
-
-    if (range_size != range.size())
-        fatal("Memory range size has changed! Saw %lld, expected %lld\n",
-              range_size, range.size());
 
     uint64_t curr_size = 0;
     long* temp_page = new long[chunk_size];
@@ -488,7 +471,34 @@ PhysicalMemory::unserializeStore(CheckpointIn &cp)
 
     if (gzclose(compressed_mem))
         fatal("Close failed on physical memory checkpoint file '%s'\n",
-              filename);
+              filepath);
+}
+
+void
+PhysicalMemory::unserializeStore(CheckpointIn &cp)
+{
+    unsigned int store_id;
+    UNSERIALIZE_SCALAR(store_id);
+
+    std::string filename;
+    UNSERIALIZE_SCALAR(filename);
+    std::string filepath = cp.getCptDir() + "/" + filename;
+
+    long range_size;
+    UNSERIALIZE_SCALAR(range_size);
+
+    AddrRange range = backingStore[store_id].range;
+
+    DPRINTF(Checkpoint, "Unserializing physical memory %s with size %d\n",
+            filename, range_size);
+
+    if (range_size != range.size())
+        fatal("Memory range size has changed! Saw %lld, expected %lld\n",
+              range_size, range.size());
+
+    this->loadMemoryData(store_id, filepath);
+
+
 }
 
 } // namespace memory

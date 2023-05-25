@@ -326,6 +326,7 @@ parser = argparse.ArgumentParser()
 Options.addCommonOptions(parser)
 Options.addFSOptions(parser)
 Options.addRowhammerOptions(parser)
+Options.addColdBootOptions(parser)
 
 # Add the ruby specific and protocol specific args
 if "--ruby" in sys.argv:
@@ -435,6 +436,14 @@ if buildEnv["USE_ARM_ISA"] and not args.bare_metal and not args.dtb_filename:
 
 if args.wait_gdb:
     test_sys.workload.wait_for_remote_gdb = True
+
+if len(args.memory_init_pmems) != len(args.memory_init_storeids) :
+    fatal("number of .pmem files to copy from should match "
+          "number of store ids to copy to")
+
+if len(args.memory_init_pmems) > 0 :
+    test_sys.init_memory_content_pmems = args.memory_init_pmems
+    test_sys.init_memory_content_storeIds = args.memory_init_storeids
 
 Simulation.setWorkCountOptions(test_sys, args)
 Simulation.run(args, root, test_sys, FutureClass)

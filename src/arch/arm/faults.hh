@@ -306,8 +306,7 @@ class ArmFaultVals : public ArmFault
     il(ThreadContext *tc) const override
     {
         // ESR.IL = 1 if exception cause is unknown (EC = 0)
-        return ec(tc) == ExceptionClass::UNKNOWN ||
-            !machInst.thumb || machInst.bigThumb;
+        return ec(tc) == EC_UNKNOWN || !machInst.thumb || machInst.bigThumb;
     }
     uint32_t iss() const override { return issRaw; }
 };
@@ -337,7 +336,7 @@ class UndefinedInstruction : public ArmFaultVals<UndefinedInstruction>
                          bool _disabled = false) :
         ArmFaultVals<UndefinedInstruction>(mach_inst),
         unknown(_unknown), disabled(_disabled),
-        overrideEc(ExceptionClass::INVALID), mnemonic(_mnemonic)
+        overrideEc(EC_INVALID), mnemonic(_mnemonic)
     {}
     UndefinedInstruction(ExtMachInst mach_inst, uint32_t _iss,
             ExceptionClass _overrideEc, const char *_mnemonic = NULL) :
@@ -362,7 +361,7 @@ class SupervisorCall : public ArmFaultVals<SupervisorCall>
     ExceptionClass overrideEc;
   public:
     SupervisorCall(ExtMachInst mach_inst, uint32_t _iss,
-                   ExceptionClass _overrideEc = ExceptionClass::INVALID) :
+                   ExceptionClass _overrideEc = EC_INVALID) :
         ArmFaultVals<SupervisorCall>(mach_inst, _iss),
         overrideEc(_overrideEc)
     {
@@ -405,7 +404,7 @@ class SupervisorTrap : public ArmFaultVals<SupervisorTrap>
 
   public:
     SupervisorTrap(ExtMachInst mach_inst, uint32_t _iss,
-                   ExceptionClass _overrideEc = ExceptionClass::INVALID) :
+                   ExceptionClass _overrideEc = EC_INVALID) :
         ArmFaultVals<SupervisorTrap>(mach_inst, _iss),
         overrideEc(_overrideEc)
     {}
@@ -425,7 +424,7 @@ class SecureMonitorTrap : public ArmFaultVals<SecureMonitorTrap>
 
   public:
     SecureMonitorTrap(ExtMachInst mach_inst, uint32_t _iss,
-                      ExceptionClass _overrideEc = ExceptionClass::INVALID) :
+                      ExceptionClass _overrideEc = EC_INVALID) :
         ArmFaultVals<SecureMonitorTrap>(mach_inst, _iss),
         overrideEc(_overrideEc)
     {}
@@ -455,7 +454,7 @@ class HypervisorTrap : public ArmFaultVals<HypervisorTrap>
 
   public:
     HypervisorTrap(ExtMachInst mach_inst, uint32_t _iss,
-                   ExceptionClass _overrideEc = ExceptionClass::INVALID) :
+                   ExceptionClass _overrideEc = EC_INVALID) :
       ArmFaultVals<HypervisorTrap>(mach_inst, _iss),
       overrideEc(_overrideEc)
     {}

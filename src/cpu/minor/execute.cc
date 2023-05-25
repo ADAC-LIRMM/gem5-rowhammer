@@ -53,6 +53,7 @@
 #include "debug/MinorMem.hh"
 #include "debug/MinorTrace.hh"
 #include "debug/PCEvent.hh"
+#include "debug/MMUWatch.hh"
 
 namespace gem5
 {
@@ -407,10 +408,11 @@ Execute::handleMemResponse(MinorDynInstPtr inst,
             context.readPredicate() : false));
     }
 
-    doInstCommitAccounting(inst);
-
     /* Generate output to account for branches */
     tryToBranch(inst, fault, branch);
+
+    doInstCommitAccounting(inst);
+
 }
 
 bool
@@ -847,7 +849,9 @@ Execute::tryPCEvents(ThreadID thread_id)
     Addr oldPC;
     do {
         oldPC = thread->pcState().instAddr();
-        cpu.threads[thread_id]->pcEventQueue.service(oldPC, thread);
+        DPRINTF(PCEvent, "Acting on PC Event %s\n",thread->pcState());
+        if(cpu.threads[thread_id]->pcEventQueue.service(oldPC, thread))
+            num_pc_event_checks++;
         num_pc_event_checks++;
     } while (oldPC != thread->pcState().instAddr());
 
@@ -857,6 +861,25 @@ Execute::tryPCEvents(ThreadID thread_id)
     }
 
     return num_pc_event_checks > 1;
+}
+void
+Execute::tryMMUWatch(LSQ::LSQRequestPtr req,ThreadID thread_id)
+{
+    if( req->request->hasPaddr() && req->request->hasVaddr()){
+        
+        ThreadContext *thread = cpu.getContext(thread_id);
+        Addr paddr= req->request->getPaddr();
+        Addr vaddr= req->request->getVaddr();
+        size_t size= req->request->getSize();
+        Addr pc = thread->pcState().instAddr();
+        BaseMMU::Mode mode=(req->isLoad)?BaseMMU::Read:BaseMMU::Write;
+        
+        if (cpu.threads[thread_id]->
+            mmuWatchList.service(vaddr,paddr,size,mode,pc,thread))
+            DPRINTF(MMUWatch, "Evaluating MMU watch for %#x, p:%#x m=%i\n",
+            paddr,vaddr,mode
+            );
+    }
 }
 
 void
@@ -1031,8 +1054,8 @@ Execute::commitInst(MinorDynInstPtr inst, bool early_memory_issue,
             fault->invoke(thread, inst->staticInst);
         }
 
-        doInstCommitAccounting(inst);
         tryToBranch(inst, fault, branch);
+        doInstCommitAccounting(inst);
     }
 
     if (completed_inst) {
@@ -1159,7 +1182,10 @@ Execute::commit(ThreadID thread_id, bool only_commit_microops, bool discard,
 
         DPRINTF(MinorExecute, "Trying to commit canCommitInsts: %d\n",
             can_commit_insts);
-
+        /* mem response is going to be committed so we have to check the watchpoint*/
+        if (mem_response &&
+            num_mem_refs_committed < memoryCommitLimit)
+            tryMMUWatch(mem_response,thread_id);
         /* Test for PC events after every instruction */
         if (isInbetweenInsts(thread_id) && tryPCEvents(thread_id)) {
             ThreadContext *thread = cpu.getContext(thread_id);
@@ -1776,6 +1802,28 @@ Execute::getCommittingThread()
                 can_commit_insts = can_commit_insts &&
                     (can_transfer_mem_inst || can_execute_fu_inst);
             }
+
+            else if (inst->inLSQ && (lsq.findResponse(inst) == NULL)
+                && (!ex_info.inFUMemInsts->empty() && lsq.canRequest()) ){
+
+                bool can_transfer_mem_inst = false;
+
+                const MinorDynInstPtr head_mem_ref_inst =
+                    ex_info.inFUMemInsts->front().inst;
+
+                FUPipeline *fu = funcUnits[head_mem_ref_inst->fuIndex];
+
+                const MinorDynInstPtr &fu_inst = fu->front().inst;
+                can_transfer_mem_inst =
+                    !fu_inst->isBubble() &&
+                     fu_inst->id.threadId == tid &&
+                     !fu_inst->inLSQ &&
+                     fu_inst->canEarlyIssue &&
+                     inst->id.execSeqNum > fu_inst->instToWaitFor;   
+
+                can_commit_insts = can_transfer_mem_inst;
+            }
+            
         }
 
 

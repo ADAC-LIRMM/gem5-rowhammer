@@ -38,7 +38,7 @@
 
 from m5.params import *
 from m5.proxy import *
-from m5.SimObject import SimObject
+from m5.SimObject import *
 
 from m5.objects.ClockedObject import ClockedObject
 from m5.objects.Compressors import BaseCacheCompressor
@@ -173,6 +173,25 @@ class BaseCache(ClockedObject):
     # data cache.
     write_allocator = Param.WriteAllocator(NULL, "Write allocator")
 
+    # File for tags state display
+    tag_state_file = Param.String("","file in which tag")
+    @cxxMethod
+    def dumpCacheTags(self):
+        """return CacheTags: str"""
+        pass
+    @cxxMethod
+    def registerFilter(self,line_addr):
+        """register a filter that trigger a simulation exit when the specified line is received in the cache
+        Args:
+            line_addr (int): address for line to filter
+        """        
+        pass
+    @cxxMethod
+    def unregisterFilter(self,line_addr):
+        """unregister a line from the filter
+        Args:
+            line_addr (int): address for line to filter"""
+        pass
 
 class Cache(BaseCache):
     type = "Cache"

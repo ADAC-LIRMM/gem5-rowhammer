@@ -25,7 +25,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-from m5.util import warn
 from .base_cpu_processor import BaseCPUProcessor
 from ..processors.simple_core import SimpleCore
 
@@ -54,14 +53,6 @@ class SimpleProcessor(BaseCPUProcessor):
         recommended you explicitly set your ISA via SimpleProcessor
         construction.
         """
-        if not isa:
-            warn(
-                "An ISA for the SimpleProcessor was not set. This will "
-                "result in usage of `runtime.get_runtime_isa` to obtain the "
-                "ISA. This function is deprecated and will be removed in "
-                "future releases of gem5. Please explicitly state the ISA "
-                "via the processor constructor."
-            )
         super().__init__(
             cores=[
                 SimpleCore(cpu_type=cpu_type, core_id=i, isa=isa)

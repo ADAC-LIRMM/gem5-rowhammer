@@ -202,14 +202,15 @@ AMDGPUInterruptHandler::setCntl(const uint32_t &data)
 void
 AMDGPUInterruptHandler::setBase(const uint32_t &data)
 {
-    regs.baseAddr = data;
-    regs.baseAddr <<= 8;
+    regs.IH_Base = data << 8;
+    regs.baseAddr |= regs.IH_Base;
 }
 
 void
 AMDGPUInterruptHandler::setBaseHi(const uint32_t &data)
 {
-    regs.baseAddr |= static_cast<uint64_t>(data) << 40;
+    regs.IH_Base_Hi = data;
+    regs.baseAddr |= ((uint64_t)regs.IH_Base_Hi) << 32;
 }
 
 void

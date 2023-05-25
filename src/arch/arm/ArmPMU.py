@@ -39,7 +39,7 @@ from m5.SimObject import *
 from m5.params import *
 from m5.params import isNullPointer
 from m5.proxy import *
-from m5.objects.Gic import ArmInterruptPin, ArmPPI
+from m5.objects.Gic import ArmInterruptPin, ArmPPI,ArmSPI
 from m5.util.fdthelper import *
 
 
@@ -197,17 +197,25 @@ class ArmPMU(SimObject):
     def generateDeviceTree(self, state):
         # For simplicity we just support PPIs for DTB autogen otherwise
         # it would be difficult to construct a ordered list of SPIs
-        assert isinstance(self.interrupt, ArmPPI)
-
+        interrupts=[]
+        #Creating an attribute to store the list of interrupts
+        if not hasattr(state,"pmu_interrupt"):
+            state.pmu_interrupt=[]
+        if isinstance(self.interrupt, ArmSPI):
+            state.pmu_interrupt.append(self.interrupt)
+        else:
+            interrupts.append(self.interrupt)
+        #all instance of pmu will override the same node
         node = FdtNode("pmu")
         node.appendCompatible("arm,armv8-pmuv3")
-
+        interrupts+=state.pmu_interrupt
         gic = self.platform.unproxy(self).gic
+        #so the last time this node is overridden
+        # the interrupt list will be complete
         node.append(
-            FdtPropertyWords(
-                "interrupts", self.interrupt.generateFdtProperty(gic)
-            )
-        )
+                FdtPropertyWords("interrupts",
+                    sum([it.generateFdtProperty(gic)
+                         for it in interrupts],[])))
 
         yield node
 
@@ -215,3 +223,17 @@ class ArmPMU(SimObject):
     platform = Param.Platform(Parent.any, "Platform this device is part of.")
     eventCounters = Param.Int(31, "Number of supported PMU counters")
     interrupt = Param.ArmInterruptPin("PMU interrupt")
+    
+    @cxxMethod 
+    def get_PMCCNTR(self):
+        """
+            get current PMCCNTR value
+            used for simulation scripting
+        """
+        pass
+    @cxxMethod 
+    def start_PMCCNTR(self):
+        """
+            Activate and reset the PMCCNTR
+        """
+        pass 

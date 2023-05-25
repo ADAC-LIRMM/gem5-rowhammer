@@ -1,0 +1,53 @@
+
+To install gem5, please follow these steps:
+
+1) Clone the repository including all the submodules,
+	for that use the "--recursive" option as show below:
+
+	git clone --recursive https://gite.lirmm.fr/gem5/gem5.git
+
+	If you don't have the rights, please contact maintainers.
+
+
+2) Check the gcc version.
+
+	In order to compile Ramulator, gcc 7 is needed at least.
+	You can check gcc version using the following command:
+
+	gcc --version
+
+	If you want to compile on jaguar, please check the gcc version.
+	By default the version 4 is used. For switching to version 7,
+	you can use the next command:
+
+	scl enable devtoolset-7 bash
+
+
+3) Compile the project using Scons.
+
+	For ARM architecture:
+	scons ./build/ARM/gem5.opt
+
+	For X86 architecture:
+	scons ./build/X86/gem5.opt
+
+	You can use the -jN to allow parallel compilation on N cores 
+	
+	Also, you can read the tutorial above for more details on building gem5:
+	http://learning.gem5.org/book/part1/building.html 
+
+
+5) Usual errors:
+
+	- If you already clone gem5 and you didn't include the submodules,
+		run the following command:
+
+		git submodule update --init
+
+		You can check if the folders ./simpoint and ./ext/ramulator/Ramulator
+		are empty or not. 
+
+
+
+
+

@@ -119,17 +119,35 @@ BaseSimpleCPU::BaseSimpleCPU(const BaseSimpleCPUParams &p)
     }
 }
 
-void
+bool
 BaseSimpleCPU::checkPcEventQueue()
 {
     Addr oldpc, pc = threadInfo[curThread]->thread->pcState().instAddr();
     do {
         oldpc = pc;
-        threadInfo[curThread]->thread->pcEventQueue.service(
-                oldpc, threadContexts[curThread]);
+        if (threadInfo[curThread]->thread->pcEventQueue.service(
+                oldpc, threadContexts[curThread])){
+                    return true;
+                }
         pc = threadInfo[curThread]->thread->pcState().instAddr();
     } while (oldpc != pc);
+    return false;
 }
+void
+BaseSimpleCPU::checkMmuWatchList(RequestPtr req, BaseMMU::Mode mode)
+{
+    if(req->hasPaddr() && req->hasVaddr()){
+        Addr paddr=req->getPaddr();
+        Addr vaddr=req->getVaddr();
+        size_t size=req->getSize();
+        Addr pc=threadInfo[curThread]->thread->pcState().instAddr();
+        threadInfo[curThread]->thread->mmuWatchList.service(
+                vaddr, paddr, size, mode, pc,
+                threadContexts[curThread]);
+    }
+}
+
+
 
 void
 BaseSimpleCPU::swapActiveThread()

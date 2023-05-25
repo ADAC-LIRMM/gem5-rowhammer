@@ -68,7 +68,7 @@ class Process;
 class Processor;
 class ThreadContext;
 
-namespace trace
+namespace Trace
 {
     class InstRecord;
 }
@@ -86,7 +86,9 @@ class BaseSimpleCPU : public BaseCPU
     ThreadID curThread;
     branch_prediction::BPredUnit *branchPred;
 
-    void checkPcEventQueue();
+    //checkPcEventQueue return true, if ane Event want the CPU tick to be reset
+    bool checkPcEventQueue();
+    void checkMmuWatchList(RequestPtr req, BaseMMU::Mode mode);
     void swapActiveThread();
 
   public:
@@ -94,7 +96,7 @@ class BaseSimpleCPU : public BaseCPU
     virtual ~BaseSimpleCPU();
     void wakeup(ThreadID tid) override;
   public:
-    trace::InstRecord *traceData;
+    Trace::InstRecord *traceData;
     CheckerCPU *checker;
 
     std::vector<SimpleExecContext*> threadInfo;

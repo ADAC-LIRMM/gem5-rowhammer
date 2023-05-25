@@ -1098,10 +1098,14 @@ Commit::commitInsts()
                     // handling PC events.
                     assert(!thread[tid]->noSquashFromTC &&
                            !thread[tid]->trapPending);
+                    
+                    
                     do {
                         oldpc = pc[tid]->instAddr();
-                        thread[tid]->pcEventQueue.service(
-                                oldpc, thread[tid]->getTC());
+                        if(thread[tid]->pcEventQueue.service(
+                                oldpc, thread[tid]->getTC())){
+                                    count++;//An event want us to stop the tick/commit
+                                };
                         count++;
                     } while (oldpc != pc[tid]->instAddr());
                     if (count > 1) {
@@ -1278,6 +1282,18 @@ Commit::commitHead(const DynInstPtr &head_inst, unsigned inst_num)
         generateTrapEvent(tid, inst_fault);
         return false;
     }
+    //Instructions here can not have Faulted 
+    if(head_inst->isLoad() || head_inst->isStore()){
+        BaseMMU::Mode mode=(head_inst->isLoad()?
+                BaseMMU::Read : BaseMMU::Write);
+        //real instruction PC :head_inst->pcState().instAddr()
+        //QF we should use nextinstAddr but 
+        //it is no longer a method in the pcState.
+        thread[tid]->mmuWatchList.service(
+            head_inst->effAddr,head_inst->physEffAddr, 
+            head_inst->effSize, mode, head_inst->pcState().instAddr(),
+            thread[tid]->getTC());
+                    }
 
     updateComInstStats(head_inst);
 

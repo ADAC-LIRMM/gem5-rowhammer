@@ -133,6 +133,10 @@ class Request
          * the UNCACHEABLE flag is set as well.
          */
         STRICT_ORDER                = 0x00000800,
+        /*
+            GDB access 
+        */
+        GDB_ACCESS                = 0x00002000,
         /** This request is made in privileged mode. */
         PRIVILEGED                  = 0x00008000,
 
@@ -470,7 +474,11 @@ class Request
     /** The cause for HTM transaction abort */
     HtmFailureFaultCause _htmAbortCause = HtmFailureFaultCause::INVALID;
 
+    
+
   public:
+    /**Translation Info : string bundle by mmus to trace information**/
+    std::string _mmu_translation_info;
 
     /**
      * Minimal constructor. No fields are initialized. (Note that
@@ -901,8 +909,12 @@ class Request
     ContextID
     contextId() const
     {
-        assert(hasContextId());
-        return _contextId;
+        if (privateFlags.isSet(VALID_CONTEXT_ID))
+        {
+            return _contextId;
+        }
+        else
+        return 0;
     }
 
     /* For GPU fullsystem mark this request is not to device memory. */

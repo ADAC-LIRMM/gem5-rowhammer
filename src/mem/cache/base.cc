@@ -52,6 +52,8 @@
 #include "debug/CachePort.hh"
 #include "debug/CacheRepl.hh"
 #include "debug/CacheVerbose.hh"
+#include "debug/CacheStateView.hh"
+#include <fstream>
 #include "debug/HWPrefetch.hh"
 #include "mem/cache/compressors/base.hh"
 #include "mem/cache/mshr.hh"
@@ -62,6 +64,7 @@
 #include "params/BaseCache.hh"
 #include "params/WriteAllocator.hh"
 #include "sim/cur_tick.hh"
+
 
 namespace gem5
 {
@@ -109,6 +112,7 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
       noTargetMSHR(nullptr),
       missCount(p.max_miss_count),
       addrRanges(p.addr_ranges.begin(), p.addr_ranges.end()),
+      tagStateFileName(p.tag_state_file),
       system(p.system),
       stats(*this)
 {
@@ -126,7 +130,8 @@ BaseCache::BaseCache(const BaseCacheParams &p, unsigned blk_size)
     tags->tagsInit();
     if (prefetcher)
         prefetcher->setCache(this);
-
+    if(tagStateFileName!="")
+        warn("Cache %s declare with :%s",name(), tagStateFileName);
     fatal_if(compressor && !dynamic_cast<CompressedTags*>(tags),
         "The tags of compressed cache %s must derive from CompressedTags",
         name());
@@ -714,8 +719,18 @@ BaseCache::functionalAccess(PacketPtr pkt, bool from_cpu_side)
 {
     Addr blk_addr = pkt->getBlockAddr(blkSize);
     bool is_secure = pkt->isSecure();
+    bool from_gdb = pkt->req->getFlags().isSet(Request::GDB_ACCESS);
+    //try with normal security mode
     CacheBlk *blk = tags->findBlock(pkt->getAddr(), is_secure);
     MSHR *mshr = mshrQueue.findMatch(blk_addr, is_secure);
+    //trying other secure mode if not found
+    if(from_gdb && !blk && !mshr){
+        blk = tags->findBlock(pkt->getAddr(), !is_secure);
+        mshr = mshrQueue.findMatch(blk_addr, !is_secure);
+        if(blk || mshr)
+            is_secure=!is_secure;
+    }
+   
 
     pkt->pushLabel(name());
 
@@ -743,9 +758,10 @@ BaseCache::functionalAccess(PacketPtr pkt, bool from_cpu_side)
         writeBuffer.trySatisfyFunctional(pkt) ||
         memSidePort.trySatisfyFunctional(pkt);
 
-    DPRINTF(CacheVerbose, "%s: %s %s%s%s\n", __func__,  pkt->print(),
+    DPRINTF(CacheVerbose, "%s: %s %s%s%s%s\n", __func__,  pkt->print(),
             (blk && blk->isValid()) ? "valid " : "",
-            have_data ? "data " : "", done ? "done " : "");
+            have_data ? "data " : "", done ? "done " : "",
+            from_gdb? "(gdb)" : "" );
 
     // We're leaving the cache, so pop cache->name() label
     pkt->popLabel();
@@ -1241,7 +1257,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     DPRINTF(Cache, "%s for %s %s\n", __func__, pkt->print(),
             blk ? "hit " + blk->print() : "miss");
-
+    notifyCacheEvent(nullptr);
     if (pkt->req->isCacheMaintenance()) {
         // A cache maintenance operation is always forwarded to the
         // memory below even if the block is found in dirty state.
@@ -1366,6 +1382,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         updateBlockData(blk, pkt, has_old_data);
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
+        notifyCacheEvent(blk);
         incHitCount(pkt);
 
         // When the packet metadata arrives, the tag lookup will be done while
@@ -1441,7 +1458,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
         updateBlockData(blk, pkt, has_old_data);
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
-
+        notifyCacheEvent(blk);
         incHitCount(pkt);
 
         // When the packet metadata arrives, the tag lookup will be done while
@@ -1584,7 +1601,7 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
 
     DPRINTF(Cache, "Block addr %#llx (%s) moving from %s to %s\n",
             addr, is_secure ? "s" : "ns", old_state, blk->print());
-
+    notifyCacheEvent(blk);
     // if we got new data, copy it in (checking for a read response
     // and a response that has data is the same in the end)
     if (pkt->isRead()) {
@@ -1647,7 +1664,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
 
     // Insert new block at victimized entry
     tags->insertBlock(pkt, victim);
-
+    notifyCacheEvent(victim);
     // If using a compressor, set compression data. This must be done after
     // insertion, as the compression bit may be set.
     if (compressor) {
@@ -2511,6 +2528,84 @@ BaseCache::regProbePoints()
     ppDataUpdate =
         new ProbePointArg<DataUpdate>(this->getProbeManager(), "Data Update");
 }
+std::string BaseCache::dumpCacheTags(){
+    return tags->print();
+}
+
+
+
+void
+BaseCache::updateCacheView(bool only_if_update_pending){
+    
+    if(gem5::debug::CacheStateView){
+        if(tagStateFileName!=""){//is the functionality enable for this Cache
+            if((!only_if_update_pending || CacheView_update_pending)){//is this a real update?
+                DPRINTF(CacheStateView,"Cache State View updated @ %d in file %s\n",curTick(),tagStateFileName);
+                std::fstream s(tagStateFileName,std::fstream::out|std::fstream::trunc);
+                if(s.is_open()){
+                    s<<gem5::curTick()<<std::endl;
+                    s<<tags->print()<<std::endl;
+                }else{
+                    warn("Cache view failed to open file : %s",tagStateFileName);
+                }
+                CacheView_update_pending=false;
+            }
+            
+        }
+        
+    }else{
+        //update postpone
+        if(!only_if_update_pending){//is this a real update (independant of pending update)
+            if(tagStateFileName!=""){
+                if(!CacheView_update_pending)warn("Cache State update postpone");//warn once 
+                CacheView_update_pending=true;
+            }
+        }
+    }
+}
+
+bool BaseCache::registerFilter(Addr addr){
+    if(std::find(filterList.begin(),filterList.end(),addr)==filterList.end()){
+        filterList.push_back(addr);
+        return true;
+    }else{
+        return false;
+    }
+}
+bool BaseCache::unregisterFilter(Addr addr){
+    auto target=std::find(filterList.begin(),filterList.end(),addr);
+    if(target!=filterList.end()){
+        //found the filter to remove
+        filterList.erase(target);
+        return true;
+    }else{
+        return false;
+    }
+}
+void BaseCache::applyCacheFilter(CacheBlk* blk){
+    for(auto f : filterList){
+        //if the filter tag correspond to the blk tag
+        if(tags->extractTag(f)==blk->getTag()){
+            //filter is trigger
+            Tick when = curTick();
+            if(last_filter_trigger!=when){
+                std::ostringstream ss;
+                last_filter_trigger=when;
+                ss <<"CacheFilter:"<<name()<<":"<< std::hex << f;
+                exitSimLoop( ss.str(), 0, when, 0, true);
+
+            }
+        }
+    }
+}
+
+void BaseCache::notifyCacheEvent(CacheBlk* blk){
+
+    if(blk != nullptr)
+        applyCacheFilter(blk);
+    updateCacheView(blk==nullptr);//if no cacheblk are provided it means that we only want commit pending update
+}
+
 
 ///////////////
 //

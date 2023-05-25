@@ -221,7 +221,7 @@ bool FullSystem;
 unsigned int FullSystemInt;
 
 Root *
-RootParams::create() const
+RootParams::create()
 {
     static bool created = false;
     if (created)

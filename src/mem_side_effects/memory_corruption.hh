@@ -10,9 +10,12 @@
 
 #include "params/MemoryCorruption.hh"
 
-#define ALL_MEM 1
-
 class Ramulator;
+
+namespace gem5
+{
+namespace memory
+{
 class Mitigation;
 
 class MemoryCorruption : public SimObject
@@ -34,13 +37,14 @@ private:
                   int neighbor_rows[2],
                   int neighbor_keys[2]);
 
-    unsigned int corrupt(Ramulator& ramulator, std::vector<int>& addr_vec,
+    unsigned int corrupt(std::vector<int>& addr_vec,
                          double flip_probability, bool to1);
 public:
-    MemoryCorruption(const MemoryCorruptionParams &p);
+    typedef MemoryCorruptionParams Params;
+    MemoryCorruption(const Params &p);
     void init(Ramulator& ramulator);
-    void onACT(Ramulator& ramulator, const std::vector<int>& addr_vec);
-    void onREF(Ramulator& ramulator, const std::vector<int>& addr_vec);
+    void onACT(const std::vector<int>& addr_vec);
+    void onREF(const std::vector<int>& addr_vec);
     bool neighbor(const std::vector<int>& addr_vec, int offset,
                   std::vector<int>& neighbor_vec);
     void refresh_row(const std::vector<int>& addr_vec);
@@ -51,11 +55,13 @@ public:
     unsigned int getRowLevel() const;
     unsigned int getColumnLevel() const;
 
-    Stats::Value rh_threshold_stat;
-    Stats::Scalar maxDisturbLevel;
-    Stats::Scalar bitFlipsCount;
+    statistics::Value rh_threshold_stat;
+    statistics::Scalar maxDisturbLevel;
+    statistics::Scalar bitFlipsCount;
 
     void regStats() override;
 };
+}
+}
 
 #endif // __MEMORY_CORRUPTION_HH__

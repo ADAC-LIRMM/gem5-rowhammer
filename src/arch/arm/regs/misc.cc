@@ -669,7 +669,7 @@ AArch32isUndefinedGenericTimer(MiscRegIndex reg, ThreadContext *tc)
 int
 snsBankedIndex(MiscRegIndex reg, ThreadContext *tc)
 {
-    SCR scr = tc->readMiscReg(MISCREG_SCR_EL3);
+    SCR scr = tc->readMiscReg(MISCREG_SCR);
     return snsBankedIndex(reg, tc, scr.ns);
 }
 
@@ -688,7 +688,7 @@ int
 snsBankedIndex64(MiscRegIndex reg, ThreadContext *tc)
 {
     auto *isa = static_cast<ArmISA::ISA *>(tc->getIsaPtr());
-    SCR scr = tc->readMiscReg(MISCREG_SCR_EL3);
+    SCR scr = tc->readMiscReg(MISCREG_SCR);
     return isa->snsBankedIndex64(reg, scr.ns);
 }
 
@@ -1311,23 +1311,18 @@ faultFpcrEL0(const MiscRegLUTEntry &entry, ThreadContext *tc,
     const bool in_host = hcr.e2h && hcr.tge;
     if (!(el2_enabled && in_host) && cpacr.fpen != 0b11) {
         if (el2_enabled && hcr.tge) {
-            return inst.generateTrap(EL2, ExceptionClass::UNKNOWN, inst.iss());
+            return inst.generateTrap(EL2, EC_UNKNOWN, inst.iss());
         } else {
-            return inst.generateTrap(EL1,
-                ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+            return inst.generateTrap(EL1, EC_TRAPPED_SIMD_FP, 0x1E00000);
         }
     } else if (el2_enabled && in_host && cptr_el2.fpen != 0b11) {
-        return inst.generateTrap(EL2,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL2, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (el2_enabled && hcr.e2h && ((cptr_el2.fpen & 0b1) == 0b0)) {
-        return inst.generateTrap(EL2,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL2, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (el2_enabled && !hcr.e2h && cptr_el2.tfp) {
-        return inst.generateTrap(EL2,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL2, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (ArmSystem::haveEL(tc, EL3) && cptr_el3.tfp) {
-        return inst.generateTrap(EL3,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL3, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else {
         return NoFault;
     }
@@ -1344,17 +1339,13 @@ faultFpcrEL1(const MiscRegLUTEntry &entry, ThreadContext *tc,
     const HCR hcr = tc->readMiscReg(MISCREG_HCR_EL2);
     const bool el2_enabled = EL2Enabled(tc);
     if ((cpacr.fpen & 0b1) == 0b0) {
-        return inst.generateTrap(EL1,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL1, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (el2_enabled && !hcr.e2h && cptr_el2.tfp) {
-        return inst.generateTrap(EL2,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL2, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (el2_enabled && hcr.e2h && ((cptr_el2.fpen & 0b1) == 0b0)) {
-        return inst.generateTrap(EL2,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL2, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (ArmSystem::haveEL(tc, EL3) && cptr_el3.tfp) {
-        return inst.generateTrap(EL3,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL3, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else {
         return NoFault;
     }
@@ -1369,14 +1360,11 @@ faultFpcrEL2(const MiscRegLUTEntry &entry, ThreadContext *tc,
 
     const HCR hcr = tc->readMiscReg(MISCREG_HCR_EL2);
     if (!hcr.e2h && cptr_el2.tfp) {
-        return inst.generateTrap(EL2,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL2, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (hcr.e2h && ((cptr_el2.fpen & 0b1) == 0b0)) {
-        return inst.generateTrap(EL2,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL2, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else if (ArmSystem::haveEL(tc, EL3) && cptr_el3.tfp) {
-        return inst.generateTrap(EL3,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL3, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else {
         return NoFault;
     }
@@ -1388,8 +1376,7 @@ faultFpcrEL3(const MiscRegLUTEntry &entry,
 {
     const CPTR cptr_el3 = tc->readMiscReg(MISCREG_CPTR_EL3);
     if (cptr_el3.tfp) {
-        return inst.generateTrap(EL3,
-            ExceptionClass::TRAPPED_SIMD_FP, 0x1E00000);
+        return inst.generateTrap(EL3, EC_TRAPPED_SIMD_FP, 0x1E00000);
     } else {
         return NoFault;
     }
@@ -1575,13 +1562,13 @@ faultZcrEL1(const MiscRegLUTEntry &entry,
     const HCR hcr = tc->readMiscReg(MISCREG_HCR_EL2);
     const bool el2_enabled = EL2Enabled(tc);
     if (!(cpacr_el1.zen & 0x1)) {
-        return inst.generateTrap(EL1, ExceptionClass::TRAPPED_SVE, 0);
+        return inst.generateTrap(EL1, EC_TRAPPED_SVE, 0);
     } else if (el2_enabled && !hcr.e2h && cptr_el2.tz) {
-        return inst.generateTrap(EL2, ExceptionClass::TRAPPED_SVE, 0);
+        return inst.generateTrap(EL2, EC_TRAPPED_SVE, 0);
     } else if (el2_enabled && hcr.e2h && !(cptr_el2.zen & 0x1)) {
-        return inst.generateTrap(EL2, ExceptionClass::TRAPPED_SVE, 0);
+        return inst.generateTrap(EL2, EC_TRAPPED_SVE, 0);
     } else if (ArmSystem::haveEL(tc, EL3) && !cptr_el3.ez) {
-        return inst.generateTrap(EL3, ExceptionClass::TRAPPED_SVE, 0);
+        return inst.generateTrap(EL3, EC_TRAPPED_SVE, 0);
     } else {
         return NoFault;
     }
@@ -1596,11 +1583,11 @@ faultZcrEL2(const MiscRegLUTEntry &entry,
 
     const HCR hcr = tc->readMiscReg(MISCREG_HCR_EL2);
     if (!hcr.e2h && cptr_el2.tz) {
-        return inst.generateTrap(EL2, ExceptionClass::TRAPPED_SVE, 0);
+        return inst.generateTrap(EL2, EC_TRAPPED_SVE, 0);
     } else if (hcr.e2h && !(cptr_el2.zen & 0x1)) {
-        return inst.generateTrap(EL2, ExceptionClass::TRAPPED_SVE, 0);
+        return inst.generateTrap(EL2, EC_TRAPPED_SVE, 0);
     } else if (ArmSystem::haveEL(tc, EL3) && !cptr_el3.ez) {
-        return inst.generateTrap(EL3, ExceptionClass::TRAPPED_SVE, 0);
+        return inst.generateTrap(EL3, EC_TRAPPED_SVE, 0);
     } else {
         return NoFault;
     }
@@ -1612,19 +1599,7 @@ faultZcrEL3(const MiscRegLUTEntry &entry,
 {
     const CPTR cptr_el3 = tc->readMiscReg(MISCREG_CPTR_EL3);
     if (!cptr_el3.ez) {
-        return inst.generateTrap(EL3, ExceptionClass::TRAPPED_SVE, 0);
-    } else {
-        return NoFault;
-    }
-}
-
-Fault
-faultGicv3(const MiscRegLUTEntry &entry,
-    ThreadContext *tc, const MiscRegOp64 &inst)
-{
-    auto gic = static_cast<ArmSystem*>(tc->getSystemPtr())->getGIC();
-    if (!gic->supportsVersion(BaseGic::GicVersion::GIC_V3)) {
-        return inst.undefined();
+        return inst.generateTrap(EL3, EC_TRAPPED_SVE, 0);
     } else {
         return NoFault;
     }
@@ -1634,9 +1609,9 @@ Fault
 faultIccSgiEL1(const MiscRegLUTEntry &entry,
     ThreadContext *tc, const MiscRegOp64 &inst)
 {
-    if (auto fault = faultGicv3(entry, tc, inst); fault != NoFault) {
-        return fault;
-    }
+    auto *isa = static_cast<ArmISA::ISA *>(tc->getIsaPtr());
+    if (!isa->haveGICv3CpuIfc())
+        return inst.undefined();
 
     const Gicv3CPUInterface::ICH_HCR_EL2 ich_hcr =
         tc->readMiscReg(MISCREG_ICH_HCR_EL2);
@@ -1655,9 +1630,9 @@ Fault
 faultIccSgiEL2(const MiscRegLUTEntry &entry,
     ThreadContext *tc, const MiscRegOp64 &inst)
 {
-    if (auto fault = faultGicv3(entry, tc, inst); fault != NoFault) {
-        return fault;
-    }
+    auto *isa = static_cast<ArmISA::ISA *>(tc->getIsaPtr());
+    if (!isa->haveGICv3CpuIfc())
+        return inst.undefined();
 
     const SCR scr = tc->readMiscReg(MISCREG_SCR_EL3);
     if (ArmSystem::haveEL(tc, EL3) && scr.irq && scr.fiq) {
@@ -4624,38 +4599,32 @@ ISA::initializeMiscRegMetadata()
         .hyp().mon()
         .mapsTo(MISCREG_ICC_HSRE);
     InitReg(MISCREG_ICC_CTLR_EL3)
-        .mon()
+        .allPrivileges().exceptUserMode()
         .mapsTo(MISCREG_ICC_MCTLR);
     InitReg(MISCREG_ICC_SRE_EL3)
-        .mon()
+        .allPrivileges().exceptUserMode()
         .mapsTo(MISCREG_ICC_MSRE);
     InitReg(MISCREG_ICC_IGRPEN1_EL3)
-        .mon()
+        .allPrivileges().exceptUserMode()
         .mapsTo(MISCREG_ICC_MGRPEN1);
 
     InitReg(MISCREG_ICH_AP0R0_EL2)
         .hyp().mon()
         .mapsTo(MISCREG_ICH_AP0R0);
     InitReg(MISCREG_ICH_AP0R1_EL2)
-        .hyp().mon()
         .mapsTo(MISCREG_ICH_AP0R1);
     InitReg(MISCREG_ICH_AP0R2_EL2)
-        .hyp().mon()
         .mapsTo(MISCREG_ICH_AP0R2);
     InitReg(MISCREG_ICH_AP0R3_EL2)
-        .hyp().mon()
         .mapsTo(MISCREG_ICH_AP0R3);
     InitReg(MISCREG_ICH_AP1R0_EL2)
         .hyp().mon()
         .mapsTo(MISCREG_ICH_AP1R0);
     InitReg(MISCREG_ICH_AP1R1_EL2)
-        .hyp().mon()
         .mapsTo(MISCREG_ICH_AP1R1);
     InitReg(MISCREG_ICH_AP1R2_EL2)
-        .hyp().mon()
         .mapsTo(MISCREG_ICH_AP1R2);
     InitReg(MISCREG_ICH_AP1R3_EL2)
-        .hyp().mon()
         .mapsTo(MISCREG_ICH_AP1R3);
     InitReg(MISCREG_ICH_HCR_EL2)
         .hyp().mon()
@@ -4677,52 +4646,52 @@ ISA::initializeMiscRegMetadata()
         .mapsTo(MISCREG_ICH_VMCR);
     InitReg(MISCREG_ICH_LR0_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR0, MISCREG_ICH_LRC0);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR1_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR1, MISCREG_ICH_LRC1);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR2_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR2, MISCREG_ICH_LRC2);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR3_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR3, MISCREG_ICH_LRC3);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR4_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR4, MISCREG_ICH_LRC4);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR5_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR5, MISCREG_ICH_LRC5);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR6_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR6, MISCREG_ICH_LRC6);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR7_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR7, MISCREG_ICH_LRC7);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR8_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR8, MISCREG_ICH_LRC8);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR9_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR9, MISCREG_ICH_LRC9);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR10_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR10, MISCREG_ICH_LRC10);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR11_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR11, MISCREG_ICH_LRC11);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR12_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR12, MISCREG_ICH_LRC12);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR13_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR13, MISCREG_ICH_LRC13);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR14_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR14, MISCREG_ICH_LRC14);
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICH_LR15_EL2)
         .hyp().mon()
-        .mapsTo(MISCREG_ICH_LR15, MISCREG_ICH_LRC15);
+        .allPrivileges().exceptUserMode();
 
     // GICv3 AArch32
     InitReg(MISCREG_ICC_AP0R0)
@@ -4784,7 +4753,7 @@ ISA::initializeMiscRegMetadata()
     InitReg(MISCREG_ICC_HPPIR1)
         .allPrivileges().exceptUserMode().writes(0);
     InitReg(MISCREG_ICC_HSRE)
-        .hyp().mon();
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICC_IAR0)
         .allPrivileges().exceptUserMode().writes(0);
     InitReg(MISCREG_ICC_IAR1)
@@ -4798,11 +4767,11 @@ ISA::initializeMiscRegMetadata()
     InitReg(MISCREG_ICC_IGRPEN1_S)
         .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICC_MCTLR)
-        .mon();
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICC_MGRPEN1)
-        .mon();
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICC_MSRE)
-        .mon();
+        .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICC_PMR)
         .allPrivileges().exceptUserMode();
     InitReg(MISCREG_ICC_RPR)
@@ -4879,36 +4848,52 @@ ISA::initializeMiscRegMetadata()
     InitReg(MISCREG_ICH_LR15)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC0)
+        .mapsTo(MISCREG_ICH_LR0)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC1)
+        .mapsTo(MISCREG_ICH_LR1)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC2)
+        .mapsTo(MISCREG_ICH_LR2)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC3)
+        .mapsTo(MISCREG_ICH_LR3)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC4)
+        .mapsTo(MISCREG_ICH_LR4)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC5)
+        .mapsTo(MISCREG_ICH_LR5)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC6)
+        .mapsTo(MISCREG_ICH_LR6)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC7)
+        .mapsTo(MISCREG_ICH_LR7)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC8)
+        .mapsTo(MISCREG_ICH_LR8)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC9)
+        .mapsTo(MISCREG_ICH_LR9)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC10)
+        .mapsTo(MISCREG_ICH_LR10)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC11)
+        .mapsTo(MISCREG_ICH_LR11)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC12)
+        .mapsTo(MISCREG_ICH_LR12)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC13)
+        .mapsTo(MISCREG_ICH_LR13)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC14)
+        .mapsTo(MISCREG_ICH_LR14)
         .hyp().mon();
     InitReg(MISCREG_ICH_LRC15)
+        .mapsTo(MISCREG_ICH_LR15)
         .hyp().mon();
 
     // SVE

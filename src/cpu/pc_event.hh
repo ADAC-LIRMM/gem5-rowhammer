@@ -61,7 +61,9 @@ class PCEvent
     Addr pc() const { return evpc; }
 
     bool remove();
-    virtual void process(ThreadContext *tc) = 0;
+    //if process return true it means that the event want the CPU to cancel current CPU tick before continuing event servicing.
+    //all following pcevent on the PC won't be processed
+    virtual bool process(ThreadContext *tc) = 0;
 };
 
 class PCEventScope
@@ -114,6 +116,7 @@ class PCEventQueue : public PCEventScope
 
     bool remove(PCEvent *event) override;
     bool schedule(PCEvent *event) override;
+    //service return true if one of the event 
     bool service(Addr pc, ThreadContext *tc)
     {
         if (pcMap.empty())
@@ -153,14 +156,14 @@ class BreakPCEvent : public PCEvent
   public:
     BreakPCEvent(PCEventScope *s, const std::string &desc, Addr addr,
                  bool del = false);
-    virtual void process(ThreadContext *tc);
+    virtual bool process(ThreadContext *tc);
 };
 
 class PanicPCEvent : public PCEvent
 {
   public:
     PanicPCEvent(PCEventScope *s, const std::string &desc, Addr pc);
-    virtual void process(ThreadContext *tc);
+    virtual bool process(ThreadContext *tc);
 };
 
 } // namespace gem5

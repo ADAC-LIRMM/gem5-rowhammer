@@ -571,6 +571,8 @@ class PMU : public SimObject, public ArmISA::BaseISADevice
      */
     void updateAllCounters();
 
+
+
   protected: /* State that needs to be serialized */
     /** Performance Monitor Count Enable Register */
     RegVal reg_pmcnten;
@@ -628,6 +630,20 @@ class PMU : public SimObject, public ArmISA::BaseISADevice
      * List of event types supported by this PMU.
      */
     std::map<EventTypeId, std::shared_ptr<PMUEvent>> eventMap;
+    
+  public:
+    /*
+      Python Simulation Scripting
+    */
+    void start_PMCCNTR(){
+       reg_pmcnten |= (1 << PMCCNTR);
+       reg_pmcr.e=true;
+       cycleCounter.enabled = true;
+       cycleCounter.setValue(0);
+       updateCounter(cycleCounter);
+       };
+    uint64_t get_PMCCNTR(){ return cycleCounter.getValue();};
+
 };
 
 } // namespace ArmISA

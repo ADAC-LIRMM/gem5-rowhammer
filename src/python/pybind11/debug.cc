@@ -64,7 +64,7 @@ output(const char *filename)
     if (!file_stream)
         file_stream = simout.create(filename);
 
-    trace::setDebugLogger(new trace::OstreamLogger(*file_stream->stream()));
+    Trace::setDebugLogger(new Trace::OstreamLogger(*file_stream->stream()));
 }
 
 static void
@@ -72,7 +72,7 @@ ignore(const char *expr)
 {
     ObjectMatch ignore(expr);
 
-    trace::getDebugLogger()->addIgnore(ignore);
+    Trace::getDebugLogger()->addIgnore(ignore);
 }
 
 void
@@ -86,6 +86,7 @@ pybind_init_debug(py::module_ &m_native)
         .def("allFlags", &debug::allFlags, py::return_value_policy::reference)
 
         .def("schedBreak", &schedBreak)
+        .def("setRemoteGDBPort", &setRemoteGDBPort)
         ;
 
     py::class_<debug::Flag> c_flag(m_debug, "Flag");
@@ -122,8 +123,8 @@ pybind_init_debug(py::module_ &m_native)
     m_trace
         .def("output", &output)
         .def("ignore", &ignore)
-        .def("enable", &trace::enable)
-        .def("disable", &trace::disable)
+        .def("enable", &Trace::enable)
+        .def("disable", &Trace::disable)
         ;
 }
 

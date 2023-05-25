@@ -72,10 +72,10 @@ namespace loader
 class SymbolTable;
 } // namespace loader
 
-namespace trace
+namespace Trace
 {
 class InstRecord;
-} // namespace trace
+} // namespace Trace
 
 /**
  * Base, ISA-independent static instruction class.
@@ -283,17 +283,17 @@ class StaticInst : public RefCounted, public StaticInstFlags
     virtual ~StaticInst() {};
 
     virtual Fault execute(ExecContext *xc,
-            trace::InstRecord *traceData) const = 0;
+            Trace::InstRecord *traceData) const = 0;
 
     virtual Fault
-    initiateAcc(ExecContext *xc, trace::InstRecord *traceData) const
+    initiateAcc(ExecContext *xc, Trace::InstRecord *traceData) const
     {
         panic("initiateAcc not defined!");
     }
 
     virtual Fault
     completeAcc(Packet *pkt, ExecContext *xc,
-            trace::InstRecord *trace_data) const
+            Trace::InstRecord *trace_data) const
     {
         panic("completeAcc not defined!");
     }

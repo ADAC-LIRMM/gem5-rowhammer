@@ -52,6 +52,7 @@
 #include "base/loader/symtab.hh"
 #include "base/statistics.hh"
 #include "cpu/pc_event.hh"
+#include "cpu/mmu_watch.hh"
 #include "enums/MemoryMode.hh"
 #include "mem/mem_requestor.hh"
 #include "mem/physical.hh"
@@ -71,7 +72,7 @@ class BaseRemoteGDB;
 class KvmVM;
 class ThreadContext;
 
-class System : public SimObject, public PCEventScope
+class System : public SimObject, public PCEventScope, public MMUWatchScope
 {
   private:
 
@@ -105,6 +106,7 @@ class System : public SimObject, public PCEventScope
     };
 
     std::list<PCEvent *> liveEvents;
+    std::list<MMUWatchPoint *> liveWatchs;
     SystemPort _systemPort;
 
     // Map of memory address ranges for devices with their own backing stores
@@ -305,6 +307,13 @@ class System : public SimObject, public PCEventScope
     void setMemoryMode(enums::MemoryMode mode);
     /** @} */
 
+
+    void setM5env(std::string key, std::string value){
+      m5env[key] = value;
+    };
+    std::string getM5env(std::string key, std::string value){
+      return m5env[key];
+    };
     /**
      * Get the cache line size of the system.
      */
@@ -318,6 +327,8 @@ class System : public SimObject, public PCEventScope
 
     bool schedule(PCEvent *event) override;
     bool remove(PCEvent *event) override;
+    bool open(MMUWatchPoint *wp) override;
+    bool close(MMUWatchPoint *wp) override;
 
     uint64_t init_param;
 
@@ -328,6 +339,8 @@ class System : public SimObject, public PCEventScope
     /** OS kernel */
     Workload *workload = nullptr;
 
+    /* M5 ENV*/
+    std::map<std::string, std::string> m5env;
   public:
     /**
      * Get a pointer to the Kernel Virtual Machine (KVM) SimObject,
@@ -554,7 +567,7 @@ class System : public SimObject, public PCEventScope
     void workItemEnd(uint32_t tid, uint32_t workid);
 
     /* Returns whether we successfully trapped into GDB. */
-    bool trapToGdb(int signal, ContextID ctx_id) const;
+    bool trapToGdb(GDBSignal signal, ContextID ctx_id) const;
 
   protected:
     /**

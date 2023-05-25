@@ -90,11 +90,12 @@ PCEventQueue::doService(Addr pc, ThreadContext *tc)
         DPRINTF(PCEvent, "PC based event serviced at %#x: %s\n",
                 (*i)->pc(), (*i)->descr());
 
-        (*i)->process(tc);
+        if((*i)->process(tc))
+            return true;
         ++serviced;
     }
 
-    return serviced > 0;
+    return false;
 }
 
 void
@@ -120,7 +121,7 @@ BreakPCEvent::BreakPCEvent(PCEventScope *s, const std::string &desc, Addr addr,
 {
 }
 
-void
+bool
 BreakPCEvent::process(ThreadContext *tc)
 {
     StringWrap name("break_event");
@@ -128,6 +129,7 @@ BreakPCEvent::process(ThreadContext *tc)
     debug::breakpoint();
     if (remove)
         delete this;
+    return false;
 }
 
 PanicPCEvent::PanicPCEvent(PCEventScope *s, const std::string &desc, Addr pc)
@@ -135,11 +137,12 @@ PanicPCEvent::PanicPCEvent(PCEventScope *s, const std::string &desc, Addr pc)
 {
 }
 
-void
+bool
 PanicPCEvent::process(ThreadContext *tc)
 {
     StringWrap name("panic_event");
     panic(descr());
+    return false;
 }
 
 } // namespace gem5

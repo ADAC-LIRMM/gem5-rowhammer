@@ -981,6 +981,10 @@ class BaseCache : public ClockedObject
      * Normally this is all possible memory addresses. */
     const AddrRangeList addrRanges;
 
+    /** File for the StateView
+     */
+    std::string tagStateFileName;
+
   public:
     /** System we are currently operating in. */
     System *system;
@@ -1351,6 +1355,36 @@ class BaseCache : public ClockedObject
      */
     bool sendWriteQueuePacket(WriteQueueEntry* wq_entry);
 
+    /**
+     * @brief True if a CacheView update as been skipped because the flag was not enabled
+     * 
+     */
+    bool CacheView_update_pending=false;
+    /**
+     * 
+     * this function check cache View is possible and then updates the file
+     * 
+     * @param only_if_update_pending force update
+     */
+    
+    void updateCacheView(bool only_if_update_pending=false);
+    /**
+     * @brief This function centralize all event that should be trigger when cache is updated
+     * 
+     * @param updated_blk blk that got updated (if nullptr the function will check if there are event that have postponed update pending)
+     */
+    void notifyCacheEvent(CacheBlk* updated_blk=nullptr);
+    std::string dumpCacheTags();
+    
+    private:
+    std::vector<Addr> filterList;
+    Tick last_filter_trigger=0;
+    void applyCacheFilter(CacheBlk* blk);
+
+    public:
+    bool registerFilter(Addr addr);
+    bool unregisterFilter(Addr addr);
+    
     /**
      * Serialize the state of the caches
      *

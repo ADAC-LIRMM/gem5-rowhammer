@@ -52,7 +52,7 @@ class MemFenceMicro : public RiscvMicroInst
   protected:
     using RiscvMicroInst::RiscvMicroInst;
 
-    Fault execute(ExecContext *, trace::InstRecord *) const override;
+    Fault execute(ExecContext *, Trace::InstRecord *) const override;
     std::string generateDisassembly(
         Addr pc, const loader::SymbolTable *symtab) const override;
 };

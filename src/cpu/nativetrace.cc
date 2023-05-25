@@ -36,7 +36,7 @@
 namespace gem5
 {
 
-namespace trace {
+namespace Trace {
 
 NativeTrace::NativeTrace(const Params &p)
     : ExeTracer(p)
@@ -55,7 +55,7 @@ NativeTrace::NativeTrace(const Params &p)
 }
 
 void
-NativeTraceRecord::dump()
+Trace::NativeTraceRecord::dump()
 {
     //Don't print what happens for each micro-op, just print out
     //once at the last op, and for regular instructions.
@@ -63,5 +63,5 @@ NativeTraceRecord::dump()
         parent->check(this);
 }
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5

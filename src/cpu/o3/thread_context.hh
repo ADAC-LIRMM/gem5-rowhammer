@@ -80,6 +80,16 @@ class ThreadContext : public gem5::ThreadContext
     {
         return thread->pcEventQueue.remove(e);
     }
+     bool
+    open(MMUWatchPoint *wp) override
+    {
+        return thread->mmuWatchList.open(wp);
+    }
+    bool
+    close(MMUWatchPoint *wp) override
+    {
+        return thread->mmuWatchList.close(wp);
+    }
 
     void
     scheduleInstCountEvent(Event *event, Tick count) override

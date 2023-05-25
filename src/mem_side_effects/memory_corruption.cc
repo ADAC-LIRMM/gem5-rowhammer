@@ -13,6 +13,8 @@
 
 using namespace std;
 
+using namespace gem5;
+using namespace memory;
 
 unsigned int count_bits_char(unsigned char x)
 {
@@ -22,7 +24,7 @@ unsigned int count_bits_char(unsigned char x)
     return x;
 }
 
-MemoryCorruption::MemoryCorruption(const MemoryCorruptionParams &params) :
+MemoryCorruption::MemoryCorruption(const Params &params) :
         SimObject(params),
         _hammer_threshold(params.hammer_threshold),
         _enable_corruption(params.enable_corruption),
@@ -119,44 +121,51 @@ int MemoryCorruption::getMapKey(const std::vector<int>& addr_vec,
     const unsigned int rowBits = this->_ramulator->getLevelAddrBits(rowLevel);
     bank_id <<= rowBits;
     const unsigned int rowMask = (1 << rowBits) - 1;
-    neighbor_rows[0] = (row == 0) ? -1 : row - 1;
-    neighbor_rows[1] = ((row & rowMask) == rowMask) ? -1 : row + 1;
-    neighbor_keys[0] = bank_id | neighbor_rows[0];
-    neighbor_keys[1] = bank_id | neighbor_rows[1];
+    if (neighbor_rows != nullptr && neighbor_keys != nullptr)
+    {
+        neighbor_rows[0] = (row == 0) ? -1 : row - 1;
+        neighbor_rows[1] = ((row & rowMask) == rowMask) ? -1 : row + 1;
+        neighbor_keys[0] = bank_id | neighbor_rows[0];
+        neighbor_keys[1] = bank_id | neighbor_rows[1];
 
-    if (_layout_config.size() > 0
-            && (neighbor_rows[0] >= 0 || neighbor_rows[1] >= 0)) {
-        bool placed[2] = {false, false};
-        unsigned int to_place = 2;
-        for (int i=0; i<_layout_config.size() && to_place > 0; i++) {
-            if (!placed[0] && _layout_config[i] == neighbor_rows[0]) {
-                placed[0] = true;
-                to_place--;
-                neighbor_rows[0] = i;
-            } else if (!placed[1] && _layout_config[i] == neighbor_rows[0]) {
-                placed[1] = true;
-                to_place--;
-                neighbor_rows[1] = i;
+        if (_layout_config.size() > 0
+                && (neighbor_rows[0] >= 0 || neighbor_rows[1] >= 0)) {
+            bool placed[2] = {false, false};
+            unsigned int to_place = 2;
+            for (int i=0; i<_layout_config.size() && to_place > 0; i++) {
+                if (!placed[0] && _layout_config[i] == neighbor_rows[0]) {
+                    placed[0] = true;
+                    to_place--;
+                    neighbor_rows[0] = i;
+                } else if (!placed[1] && _layout_config[i] == neighbor_rows[0]) {
+                    placed[1] = true;
+                    to_place--;
+                    neighbor_rows[1] = i;
+                }
             }
         }
     }
     return bank_id | (row & rowMask);
 }
 
-unsigned int MemoryCorruption::corrupt(Ramulator& ramulator, std::vector<int>& addr_vec,
+unsigned int MemoryCorruption::corrupt(std::vector<int>& addr_vec,
                                double flip_probability, bool to1)
 {
-    static const unsigned int colLvl = ramulator.getColumnLevel();
-    static const unsigned int columns = 1 << ramulator.getLevelAddrBits(colLvl);
-    static const unsigned int txBits = ramulator.getTxBits();
+    static const unsigned int colLvl = _ramulator->getColumnLevel();
+    static const unsigned int columns = 1 << _ramulator->getLevelAddrBits(colLvl);
+    static const unsigned int txBits = _ramulator->getTxBits();
     int original_col = addr_vec[colLvl];
     addr_vec[colLvl] = 0;
     unsigned int flipped = 0;
     int length = 1 << txBits;
     for(int col = 0; col < columns; col++) {
         addr_vec[colLvl] = col;
-        long addr = ramulator.vec_to_addr(addr_vec);
-        uint8_t *host_addr = this->_ramulator->toHostAddr(addr);
+        long addr = _ramulator->vec_to_addr(addr_vec);
+
+        if (addr < _ramulator->start() || addr - _ramulator->start() >= _ramulator->size())
+            continue;
+
+        uint8_t *host_addr = _ramulator->toHostAddr(addr);
         if (flip_probability >= 1) {
             uint8_t buffer[length];
             memcpy(buffer, host_addr, length);
@@ -208,8 +217,7 @@ unsigned int MemoryCorruption::corrupt(Ramulator& ramulator, std::vector<int>& a
     return flipped;
 }
 
-void MemoryCorruption::onACT(Ramulator& ramulator,
-                             const std::vector<int>& addr_vec)
+void MemoryCorruption::onACT(const std::vector<int>& addr_vec)
 {
     int neighbor_rows[2];
     int neighbor_keys[2];
@@ -232,12 +240,12 @@ void MemoryCorruption::onACT(Ramulator& ramulator,
         if (neighbor_keys[i] >= 0) {
             this->_row_counters[neighbor_keys[i]] += 1;
             std::vector<int> vec = addr_vec;
-            const unsigned int rowLvl = ramulator.getRowLevel(),
-                               colLvl = ramulator.getColumnLevel();
+            const unsigned int rowLvl = _ramulator->getRowLevel(),
+                               colLvl = _ramulator->getColumnLevel();
             vec[rowLvl] = neighbor_rows[i];
             vec[colLvl] = 0;
             if (this->_row_counters[neighbor_keys[i]] >= _hammer_threshold) {
-                long addr = ramulator.vec_to_addr(vec);
+                long addr = _ramulator->vec_to_addr(vec);
 
                 if (_row_counters[neighbor_keys[i]] == _hammer_threshold) {
                     DPRINTF(MemCorrupt, "reached hammer threshold for %08xh "
@@ -256,14 +264,15 @@ void MemoryCorruption::onACT(Ramulator& ramulator,
                             x *= x;
                         }
                     }
-                    const int nb_flipped = this->corrupt(ramulator, vec,
+                    const int nb_flipped = this->corrupt(vec,
                                                         probability, false);
 
                     if (nb_flipped > 0)
                         DPRINTF(MemCorrupt, "flipped %d bits/(2^(%d+%d)*8) @ %08xh "
                                 "[%d|%d|%d|%d|%d|%d] (hammered %d times)\n",
-                                nb_flipped, ramulator.getTxBits(), ramulator.getLevelAddrBits(colLvl), addr, vec[0], vec[1], vec[2],
-                                vec[3], vec[4], vec[5],
+                                nb_flipped, _ramulator->getTxBits(),
+                                _ramulator->getLevelAddrBits(colLvl), addr,
+                                 vec[0], vec[1], vec[2], vec[3], vec[4], vec[5],
                                 this->_row_counters[neighbor_keys[i]]);
                     ((void)nb_flipped);
                 }
@@ -280,11 +289,10 @@ void MemoryCorruption::onACT(Ramulator& ramulator,
         this->_mitigation->onACT(*this, addr_vec);
     }
 }
-void MemoryCorruption::onREF(Ramulator& ramulator,
-                             const std::vector<int>& addr_vec)
+void MemoryCorruption::onREF(const std::vector<int>& addr_vec)
 {
-    if (addr_vec[ramulator.getRowLevel()] >= 0) { //row-specific refresh
-        this->onACT(ramulator, addr_vec);
+    if (addr_vec[_ramulator->getRowLevel()] >= 0) { //row-specific refresh
+        this->onACT(addr_vec);
     }
     else if (_refresh_count_down == 0) {
         _refresh_count_down = 8196-1;
@@ -292,7 +300,7 @@ void MemoryCorruption::onREF(Ramulator& ramulator,
                 "REF cycle complete => reset ACT counters\n");
         this->_row_counters.clear();
         if (this->_mitigation != nullptr) {
-            this->_mitigation->onREF(*this, addr_vec);
+            this->_mitigation->onREFW(*this, addr_vec);
         }
         for (const auto& kv : this->_row_counters)
         {
@@ -302,6 +310,9 @@ void MemoryCorruption::onREF(Ramulator& ramulator,
         }
     }
     else {
+        if (this->_mitigation != nullptr) {
+            this->_mitigation->onREFI(*this, addr_vec);
+        }
         _refresh_count_down--;
         //DPRINTF(MemCorruptDetails,
         //        "%d REF until ACT counters reset\n",
@@ -347,7 +358,7 @@ unsigned int MemoryCorruption::getColumnLevel() const
 
 void MemoryCorruption::regStats()
 {
-    using namespace Stats;
+    using namespace statistics;
     SimObject::regStats();
 
     for (const auto& kv : this->_row_counters)

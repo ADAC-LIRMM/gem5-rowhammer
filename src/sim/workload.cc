@@ -72,7 +72,16 @@ Workload::replaceThreadContext(ThreadContext *tc)
 }
 
 bool
-Workload::trapToGdb(int signal, ContextID ctx_id)
+Workload::triggerGDB(int signal,ContextID ctx_id,std::string stopReason,int skipped_inst){
+    if (gdb && gdb->isAttached()) {
+        return  gdb->scheduleUserTrapEvent(ctx_id,(GDBSignal)signal,skipped_inst,stopReason);
+    }
+    return false;
+}
+
+
+bool
+Workload::trapToGdb(GDBSignal signal, ContextID ctx_id)
 {
     if (gdb && gdb->isAttached()) {
         gdb->trap(ctx_id, signal);
@@ -80,6 +89,7 @@ Workload::trapToGdb(int signal, ContextID ctx_id)
     }
     return false;
 };
+
 bool
 Workload::sendToGdb(std::string msg){
      if (gdb)
@@ -87,7 +97,26 @@ Workload::sendToGdb(std::string msg){
     else
         return false;
  }
+Addr
+Workload::translateAddr(ContextID thread_id, Addr addr){
+    if (gdb)
+        return gdb->translateAddr(thread_id,addr);
+    else
+        return -1;
+}
+void
+Workload::setPhysicalWatch(bool val){
+    if (gdb)
+        gdb->setPhysicalWatch(val);
+}
+std::string
+Workload::getGDBStopReason(){
+    if (gdb)
+        return gdb->getPendingStopReason();
+    else
+        return "";
 
+}
 
 void
 Workload::startup()
@@ -102,5 +131,6 @@ Workload::startup()
         gdb->connect();
     }
 }
+
 
 } // namespace gem5

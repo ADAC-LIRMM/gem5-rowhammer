@@ -157,7 +157,7 @@ SimControl::SimControl(sc_core::sc_module_name name,
         usage(prog_name);
 
     /* Pass DPRINTF messages to SystemC */
-    trace::setDebugLogger(&logger);
+    Trace::setDebugLogger(&logger);
 
     /* @todo need this as an option */
     Gem5SystemC::setTickFrequency();
@@ -179,7 +179,7 @@ SimControl::SimControl(sc_core::sc_module_name name,
     statistics::initSimStats();
     statistics::registerHandlers(CxxConfig::statsReset, CxxConfig::statsDump);
 
-    trace::enable();
+    Trace::enable();
     setDebugFlag("Terminal");
 
     checkpoint_restore = false;

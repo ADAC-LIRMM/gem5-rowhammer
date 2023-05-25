@@ -245,16 +245,7 @@ Walker::WalkerState::walkStateMachine(PageTableEntry &pte, Addr &nextRead,
 
     switch(state) {
       case PDE2:
-        if (pde.p) {
-            DPRINTF(GPUPTWalker, "Treating PDE2 as PTE: %#016x frag: %d\n",
-                    (uint64_t)pte, pte.fragment);
-            entry.pte = pte;
-            int fragment = pte.fragment;
-            entry.logBytes = PageShift + std::min(3*9, fragment);
-            entry.vaddr <<= PageShift;
-            entry.vaddr = entry.vaddr & ~mask(entry.logBytes);
-            doEndWalk = true;
-        }
+        fatal_if(pde.p, "Fragment in PDE2 not implemented");
 
         // Read the pde1Addr
         part1 = ((((uint64_t)pte) >> 6) << 3);
@@ -266,16 +257,7 @@ Walker::WalkerState::walkStateMachine(PageTableEntry &pte, Addr &nextRead,
         nextState = PDE1;
         break;
       case PDE1:
-        if (pde.p) {
-            DPRINTF(GPUPTWalker, "Treating PDE1 as PTE: %#016x frag: %d\n",
-                    (uint64_t)pte, pte.fragment);
-            entry.pte = pte;
-            int fragment = pte.fragment;
-            entry.logBytes = PageShift + std::min(2*9, fragment);
-            entry.vaddr <<= PageShift;
-            entry.vaddr = entry.vaddr & ~mask(entry.logBytes);
-            doEndWalk = true;
-        }
+        fatal_if(pde.p, "Fragment in PDE1 not implemented");
 
         // Read the pde0Addr
         part1 = ((((uint64_t)pte) >> 6) << 3);

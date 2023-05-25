@@ -186,7 +186,7 @@ Kernel *kernel;
 } // namespace sc_gem5
 
 sc_gem5::Kernel *
-gem5::SystemC_KernelParams::create() const
+gem5::SystemC_KernelParams::create()
 {
     using namespace gem5;
     panic_if(sc_gem5::kernel,

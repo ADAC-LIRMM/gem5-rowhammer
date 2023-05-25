@@ -45,6 +45,8 @@
 
 #include "sim/global_event.hh"
 #include "sim/serialize.hh"
+#include "base/trace.hh"
+#include "debug/Event.hh"
 
 namespace gem5
 {
@@ -68,8 +70,11 @@ class GlobalSimLoopExitEvent : public GlobalEvent
     const std::string getCause() const { return cause; }
     int getCode() const { return code; }
 
-    void process();     // process event
-
+    virtual void process();// process event
+    virtual void clean(){};//cleaning event
+    ~GlobalSimLoopExitEvent (){
+      DPRINTF(Event,"GlobalSimLoopExitEvent destructed\n");
+    };
     virtual const char *description() const;
 };
 
@@ -94,6 +99,7 @@ class LocalSimLoopExitEvent : public Event
 
     void serialize(CheckpointOut &cp) const override;
     void unserialize(CheckpointIn &cp) override;
+    const std::string name()const override { return "local_sim_exit_event";};
 };
 
 //

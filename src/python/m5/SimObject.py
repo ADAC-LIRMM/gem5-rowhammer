@@ -1235,7 +1235,7 @@ class SimObject(object, metaclass=MetaSimObject):
         if not self._ccObject:
             # Make sure this object is in the configuration hierarchy
             if not self._parent and not isRoot(self):
-                raise RuntimeError("Attempt to instantiate orphan node")
+                raise RuntimeError("Attempt to instantiate orphan node :" +str(type(self)))
             # Cycles in the configuration hierarchy are not supported. This
             # will catch the resulting recursion and stop.
             self._ccObject = -1

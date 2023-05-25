@@ -71,7 +71,7 @@ output decoder {{
 
 def template SyscallExecute {{
     Fault %(class_name)s::execute(ExecContext *xc,
-            trace::InstRecord *traceData) const
+            Trace::InstRecord *traceData) const
     {
         Fault fault = NoFault;
         %(op_decl)s;

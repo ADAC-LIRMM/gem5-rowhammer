@@ -62,6 +62,7 @@ namespace ArmISA
 
 class RemoteGDB : public BaseRemoteGDB
 {
+ 
   protected:
     bool acc(Addr addr, size_t len) override;
 
@@ -116,7 +117,8 @@ class RemoteGDB : public BaseRemoteGDB
 
     AArch32GdbRegCache regCache32;
     AArch64GdbRegCache regCache64;
-
+  protected:
+  int convSignumForArch(int signum) override;
   public:
     RemoteGDB(System *_system, int _port);
     BaseGdbRegCache *gdbRegs() override;
@@ -124,10 +126,13 @@ class RemoteGDB : public BaseRemoteGDB
     std::vector<std::string>
     availableFeatures() const override
     {
-        return {"qXfer:features:read+"};
+        std::vector<std::string> features=BaseRemoteGDB::availableFeatures();
+        features.push_back("qXfer:features:read+");
+        return features;
     };
     bool getXferFeaturesRead(const std::string &annex,
                              std::string &output) override;
+
 };
 
 } // namespace ArmISA

@@ -891,11 +891,7 @@ action(Initiate_CopyBack_Stale, desc="") {
 
   tbe.actions.pushNB(Event:SendCompDBIDRespStale);
   tbe.actions.pushNB(Event:WriteFEPipe);
-
-  // eviction condition should be examined if it is the last sharer
-  if (tbe.dir_sharers.count() == 1) {
-    tbe.actions.push(Event:FinishCopyBack_Stale);
-  }
+  tbe.actions.push(Event:FinishCopyBack_Stale);
 
   assert((tbe.dir_ownerExists == false) || (tbe.dir_owner != tbe.requestor));
 }

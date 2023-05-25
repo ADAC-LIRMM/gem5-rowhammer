@@ -32,13 +32,10 @@ set of statistics.
 """
 
 import m5
-
 import argparse
 import importlib
-from pathlib import Path
 
 from m5.objects import Root, MemorySize
-from m5.stats.gem5stats import get_simstat
 from gem5.components.boards.test_board import TestBoard
 
 
@@ -177,6 +174,7 @@ parser.add_argument(
     help="The arguments needed to instantiate the memory class.",
 )
 
+
 args = parser.parse_args()
 
 cache_hierarchy = cache_factory(args.cache_class)
@@ -194,14 +192,13 @@ generator = generator_factory(
 # tasks
 motherboard = TestBoard(
     clk_freq="3GHz",
-    generator=generator,
+    processor=generator,  # We pass the traffic generator as the processor.
     memory=memory,
     cache_hierarchy=cache_hierarchy,
 )
 
 root = Root(full_system=False, system=motherboard)
 
-motherboard._pre_instantiate()
 m5.instantiate()
 
 generator.start_traffic()
@@ -210,8 +207,3 @@ exit_event = m5.simulate()
 print(
     "Exiting @ tick {} because {}.".format(m5.curTick(), exit_event.getCause())
 )
-
-simstats = get_simstat(root, prepare_stats=True)
-json_output = Path(m5.options.outdir) / "output.json"
-with open(json_output, "w") as stats_file:
-    simstats.dump(stats_file, indent=2)

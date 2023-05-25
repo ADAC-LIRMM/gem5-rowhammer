@@ -67,6 +67,7 @@ class ThreadState : public gem5::ThreadState
 {
   public:
     PCEventQueue pcEventQueue;
+    MMUWatchList mmuWatchList;
     /**
      * An instruction-based event queue. Used for scheduling events based on
      * number of instructions committed.

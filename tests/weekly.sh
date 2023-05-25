@@ -35,10 +35,6 @@ gem5_root="${dir}/.."
 # The per-container Docker memory limit.
 docker_mem_limit="24g"
 
-# The docker tag to use (varies between develop, and versions on the staging
-# branch)
-tag="v22-1"
-
 # We assume the first two arguments are the number of threads followed by the
 # GPU ISA to test. These default to 1 and GCN3_X86 is no argument is given.
 threads=1
@@ -63,7 +59,7 @@ fi
 # Run the gem5 very-long tests.
 docker run -u $UID:$GID --volume "${gem5_root}":"${gem5_root}" -w \
     "${gem5_root}"/tests --memory="${docker_mem_limit}" --rm \
-    gcr.io/gem5-test/ubuntu-22.04_all-dependencies:${tag} \
+    gcr.io/gem5-test/ubuntu-20.04_all-dependencies:latest \
         ./main.py run --length very-long -j${threads} -t${threads} -vv
 
 mkdir -p tests/testing-results
@@ -72,7 +68,7 @@ mkdir -p tests/testing-results
 # before pulling gem5 resources, make sure it doesn't exist already
 docker run --rm --volume "${gem5_root}":"${gem5_root}" -w \
        "${gem5_root}" --memory="${docker_mem_limit}" \
-       gcr.io/gem5-test/gcn-gpu:${tag} bash -c \
+       gcr.io/gem5-test/gcn-gpu:latest bash -c \
        "rm -rf ${gem5_root}/gem5-resources"
 # delete Pannotia datasets and output files in case a failed regression run left
 # them around
@@ -117,7 +113,7 @@ cd "${gem5_root}"
 # avoid needing to set all of these, we instead build a docker for it, which
 # has all these variables pre-set in its Dockerfile
 # To avoid compiling gem5 multiple times, all GPU benchmarks will use this
-docker pull gcr.io/gem5-test/gcn-gpu:${tag}
+docker pull gcr.io/gem5-test/gcn-gpu:latest
 docker build -t hacc-test-weekly ${gem5_root}/gem5-resources/src/gpu/halo-finder
 
 docker run --rm -u $UID:$GID --volume "${gem5_root}":"${gem5_root}" -w \
@@ -131,7 +127,7 @@ docker run --rm -u $UID:$GID --volume "${gem5_root}":"${gem5_root}" -w \
 # it is not set.
 docker run --rm -u $UID:$GID --volume "${gem5_root}":"${gem5_root}" -w \
     "${gem5_root}/util/m5" --memory="${docker_mem_limit}" hacc-test-weekly bash -c \
-    "export TERM=xterm-256color ; scons build/x86/out/m5"
+    "export TERM=xterm-256color ; scons build/x86/out/m5 --ignore-style"
 
 # test LULESH
 # build LULESH

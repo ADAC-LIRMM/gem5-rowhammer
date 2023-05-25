@@ -85,6 +85,7 @@ class AMDGPUDevice : public PciDevice
      * Structures to hold registers, doorbells, and some frame memory
      */
     using GPURegMap = std::unordered_map<uint32_t, uint64_t>;
+    GPURegMap frame_regs;
     GPURegMap regs;
     std::unordered_map<uint32_t, QueueType> doorbells;
 

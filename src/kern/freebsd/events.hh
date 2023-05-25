@@ -72,7 +72,7 @@ class SkipUDelay : public Base
         Base(s, desc, addr), argDivToNs(div), argMultToNs(mult)
     {}
 
-    void
+    bool
     process(ThreadContext *tc) override
     {
         // Use Addr since it's handled specially and will act as a natively
@@ -82,7 +82,7 @@ class SkipUDelay : public Base
             onUDelay(tc, argDivToNs, argMultToNs, time);
         };
         invokeSimcall<ABI>(tc, call_udelay);
-        Base::process(tc);
+        return Base::process(tc);
     }
 };
 

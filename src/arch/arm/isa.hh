@@ -104,6 +104,8 @@ namespace ArmISA
          */
         bool impdefAsNop;
 
+        bool afterStartup;
+
         SelfDebug * selfDebug;
 
         const MiscRegLUTEntryInitializer
@@ -116,7 +118,6 @@ namespace ArmISA
 
         BaseISADevice &getGenericTimer();
         BaseISADevice &getGICv3CPUInterface();
-        BaseISADevice *getGICv3CPUInterface(ThreadContext *tc);
 
         RegVal miscRegs[NUM_MISCREGS];
         const RegId *intRegMap;
@@ -392,6 +393,17 @@ namespace ArmISA
                           ThreadContext *old_tc) override;
 
         enums::DecoderFlavor decoderFlavor() const { return _decoderFlavor; }
+
+        /** Returns true if the ISA has a GICv3 cpu interface */
+        bool
+        haveGICv3CpuIfc() const
+        {
+            // gicv3CpuInterface is initialized at startup time, hence
+            // trying to read its value before the startup stage will lead
+            // to an error
+            assert(afterStartup);
+            return gicv3CpuInterface != nullptr;
+        }
 
         PARAMS(ArmISA);
 

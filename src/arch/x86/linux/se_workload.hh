@@ -57,7 +57,7 @@ namespace X86ISA
 class EmuLinux : public SEWorkload
 {
   public:
-    PARAMS(X86EmuLinux);
+    using Params = X86EmuLinuxParams;
 
     EmuLinux(const Params &p);
 
@@ -65,8 +65,7 @@ class EmuLinux : public SEWorkload
     setSystem(System *sys) override
     {
         SEWorkload::setSystem(sys);
-        gdb = BaseRemoteGDB::build<RemoteGDB>(
-                params().remote_gdb_port, system);
+        gdb = BaseRemoteGDB::build<RemoteGDB>(system);
     }
 
     loader::Arch getArch() const override { return loader::X86_64; }

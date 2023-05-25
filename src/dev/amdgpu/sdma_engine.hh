@@ -33,6 +33,7 @@
 #define __DEV_AMDGPU_SDMA_ENGINE_HH__
 
 #include "base/bitunion.hh"
+#include "debug/SDMAEngine.hh"
 #include "dev/amdgpu/amdgpu_device.hh"
 #include "dev/amdgpu/sdma_packets.hh"
 #include "dev/dma_virt_device.hh"
@@ -58,8 +59,6 @@ class SDMAEngine : public DmaVirtDevice
         Addr _rptr;
         Addr _wptr;
         Addr _size;
-        Addr _rptr_wb_addr = 0;
-        Addr _global_rptr = 0;
         bool _valid;
         bool _processing;
         SDMAQueue *_parent;
@@ -74,8 +73,6 @@ class SDMAEngine : public DmaVirtDevice
         Addr wptr() { return _base + _wptr; }
         Addr getWptr() { return _wptr; }
         Addr size() { return _size; }
-        Addr rptrWbAddr() { return _rptr_wb_addr; }
-        Addr globalRptr() { return _global_rptr; }
         bool valid() { return _valid; }
         bool processing() { return _processing; }
         SDMAQueue* parent() { return _parent; }
@@ -86,27 +83,22 @@ class SDMAEngine : public DmaVirtDevice
         void
         incRptr(uint32_t value)
         {
+            //assert((_rptr + value) <= (_size << 1));
             _rptr = (_rptr + value) % _size;
-            _global_rptr += value;
         }
 
-        void
-        rptr(Addr value)
-        {
-            _rptr = value;
-            _global_rptr = value;
-        }
+        void rptr(Addr value) { _rptr = value; }
 
         void
         setWptr(Addr value)
         {
+            //assert(value <= (_size << 1));
             _wptr = value % _size;
         }
 
         void wptr(Addr value) { _wptr = value; }
 
         void size(Addr value) { _size = value; }
-        void rptrWbAddr(Addr value) { _rptr_wb_addr = value; }
         void valid(bool v) { _valid = v; }
         void processing(bool value) { _processing = value; }
         void parent(SDMAQueue* q) { _parent = q; }
@@ -277,8 +269,7 @@ class SDMAEngine : public DmaVirtDevice
     /**
      * Methods for RLC queues
      */
-    void registerRLCQueue(Addr doorbell, Addr rb_base, uint32_t size,
-                          Addr rptr_wb_addr);
+    void registerRLCQueue(Addr doorbell, Addr rb_base);
     void unregisterRLCQueue(Addr doorbell);
     void deallocateRLCQueues();
 

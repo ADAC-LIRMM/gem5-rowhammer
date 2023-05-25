@@ -37,7 +37,6 @@ gem5_verify_config(
     config=joinpath(getcwd(), "simple-run.py"),
     config_args=[],
     valid_isas=(constants.null_tag,),
-    length=constants.long_tag,
 )
 
 simple_mem_params = [
@@ -58,7 +57,6 @@ for name, params in simple_mem_params:
         config=joinpath(getcwd(), "simple-run.py"),
         config_args=args,
         valid_isas=(constants.null_tag,),
-        length=constants.long_tag,
     )  # This tests for validity as well as performance
 
 gem5_verify_config(
@@ -67,7 +65,6 @@ gem5_verify_config(
     config=joinpath(getcwd(), "memtest-run.py"),
     config_args=[],
     valid_isas=(constants.null_tag,),
-    length=constants.long_tag,
 )
 
 null_tests = [
@@ -135,5 +132,4 @@ for test_name, basename_noext, args in null_tests:
         config_args=args,
         valid_isas=(constants.null_tag,),
         valid_hosts=constants.supported_hosts,
-        length=constants.long_tag,
     )

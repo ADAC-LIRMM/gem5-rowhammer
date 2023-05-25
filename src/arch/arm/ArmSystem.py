@@ -1,4 +1,4 @@
-# Copyright (c) 2009, 2012-2013, 2015-2022 ARM Limited
+# Copyright (c) 2009, 2012-2013, 2015-2021 ARM Limited
 # All rights reserved.
 #
 # The license below extends only to copyright in the software and shall
@@ -40,8 +40,6 @@ from m5.util.fdthelper import *
 
 from m5.objects.System import System
 from m5.objects.ArmSemihosting import ArmSemihosting
-
-from typing import Any
 
 
 class SveVectorLength(UInt8):
@@ -93,14 +91,6 @@ class ArmRelease(SimObject):
         if new_ext.value not in [ext.value for ext in self.extensions]:
             self.extensions.append(new_ext)
 
-    def remove(self, ext: ArmExtension) -> None:
-        """
-        Remove the provided extension (ArmExtension) from the system
-        """
-        for curr_ext in list(self.extensions):
-            if curr_ext.value == ext.value:
-                self.extensions.remove(curr_ext)
-
     def has(self, new_ext: ArmExtension) -> bool:
         """
         Is the system implementing the provided extension (ArmExtension) ?
@@ -109,17 +99,6 @@ class ArmRelease(SimObject):
             return False
         else:
             return True
-
-    @classmethod
-    def for_kvm(cls) -> Any:
-        """
-        Generates an ArmRelease for KVM. It simply extracts EL2/EL3 support
-        from the current cls object
-        """
-        release = cls()
-        release.remove(ArmExtension("SECURITY"))
-        release.remove(ArmExtension("VIRTUALIZATION"))
-        return release
 
 
 class Armv8(ArmRelease):
@@ -235,16 +214,15 @@ class ArmSystem(System):
         # creating a node called '/' which will then be merged with the
         # root instead of appended.
 
-        def generateMemNode(mem_range):
-            node = FdtNode("memory@%x" % int(mem_range.start))
-            node.append(FdtPropertyStrings("device_type", ["memory"]))
-            node.append(
-                FdtPropertyWords(
-                    "reg",
-                    state.addrCells(mem_range.start)
-                    + state.sizeCells(mem_range.size()),
-                )
-            )
+        def generateMemNode(mem_ranges):
+            if len(mem_ranges)>0:
+                node = FdtNode("memory@%x" % int(mem_ranges[0].start))
+                node.append(FdtPropertyStrings("device_type", ["memory"]))
+                reg=[]
+                for r in mem_ranges:
+                    reg+=(state.addrCells(r.start) +
+                        state.sizeCells(r.size()))
+                node.append(FdtPropertyWords("reg",reg))
             return node
 
         root = FdtNode("/")
@@ -252,8 +230,7 @@ class ArmSystem(System):
         root.append(state.sizeCellsProperty())
 
         # Add memory nodes
-        for mem_range in self.mem_ranges:
-            root.append(generateMemNode(mem_range))
+        root.append(generateMemNode(self.mem_ranges))
 
         for node in self.recurseDeviceTree(state):
             # Merge root nodes instead of adding them (for children

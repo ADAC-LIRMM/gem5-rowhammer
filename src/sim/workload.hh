@@ -31,6 +31,7 @@
 #include <set>
 #include <tuple>
 
+#include "base/gdb_signals.hh"
 #include "base/loader/object_file.hh"
 #include "base/loader/symtab.hh"
 #include "enums/ByteOrder.hh"
@@ -91,8 +92,13 @@ class Workload : public SimObject
 
     // Once trapping into GDB is no longer a special case routed through the
     // system object, this helper can be removed.
-    bool trapToGdb(int signal, ContextID ctx_id);
-    bool sendToGdb(std::string msg);
+    bool trapToGdb(GDBSignal signal, ContextID ctx_id);
+
+    bool triggerGDB(int signal,ContextID ctx_id,std::string stopReason="",int skipped_inst=0);
+    bool sendToGdb(std::string message);
+    Addr translateAddr(ContextID thread_id, Addr addr);
+    void setPhysicalWatch(bool val);
+    std::string getGDBStopReason();
 
     virtual void registerThreadContext(ThreadContext *tc);
     virtual void replaceThreadContext(ThreadContext *tc);

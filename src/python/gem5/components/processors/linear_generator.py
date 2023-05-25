@@ -25,13 +25,16 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from ...utils.override import overrides
+from ..boards.mem_mode import MemMode
 from .linear_generator_core import LinearGeneratorCore
-from .abstract_generator import AbstractGenerator
+
+from .abstract_processor import AbstractProcessor
+from ..boards.abstract_board import AbstractBoard
 
 from typing import List
 
 
-class LinearGenerator(AbstractGenerator):
+class LinearGenerator(AbstractProcessor):
     def __init__(
         self,
         num_cores: int = 1,
@@ -78,14 +81,14 @@ class LinearGenerator(AbstractGenerator):
 
     def _create_cores(
         self,
-        num_cores: int,
-        duration: str,
-        rate: str,
-        block_size: int,
-        min_addr: int,
-        max_addr: int,
-        rd_perc: int,
-        data_limit: int,
+        num_cores,
+        duration,
+        rate,
+        block_size,
+        min_addr,
+        max_addr,
+        rd_perc,
+        data_limit,
     ) -> List[LinearGeneratorCore]:
         """
         The helper function to create the cores for the generator, it will use
@@ -101,10 +104,16 @@ class LinearGenerator(AbstractGenerator):
                 rd_perc=rd_perc,
                 data_limit=data_limit,
             )
-            for _ in range(num_cores)
+            for i in range(num_cores)
         ]
 
-    @overrides(AbstractGenerator)
+    @overrides(AbstractProcessor)
+    def incorporate_processor(self, board: AbstractBoard) -> None:
+        board.set_mem_mode(MemMode.TIMING)
+
     def start_traffic(self) -> None:
+        """
+        This function will start the assigned traffic to this generator.
+        """
         for core in self.cores:
             core.start_traffic()

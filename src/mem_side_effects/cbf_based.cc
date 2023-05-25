@@ -3,7 +3,9 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "debug/MemCorruptMitigation.hh"
+using namespace gem5;
+
+using namespace memory;
 
 uint64_t hash(uint64_t value)
 {
@@ -14,7 +16,7 @@ uint64_t hash(uint64_t value)
 }
 
 
-CBFBased::CBFBased(const CBFBasedParams& params) :
+CBFBased::CBFBased(const Params& params) :
     Mitigation(params),
     _level(params.level),
     _nb_counters(params.nb_counters),
@@ -146,7 +148,7 @@ void CBFBased::onACT(MemoryCorruption& mem_corrupt,
         }
     }
 }
-void CBFBased::onREF(MemoryCorruption& mem_corrupt,
+void CBFBased::onREFW(MemoryCorruption& mem_corrupt,
                      const std::vector<int>& addr_vec)
 {
     for(int i=0; i< this->_units.size(); i++) {

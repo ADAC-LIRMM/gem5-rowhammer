@@ -44,7 +44,7 @@ class SkipFuncBase : public PCEvent
         PCEvent(s, desc, addr)
     {}
 
-    void process(ThreadContext *tc) override;
+    bool process(ThreadContext *tc) override;
 };
 
 } // namespace gem5

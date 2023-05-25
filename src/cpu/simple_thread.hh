@@ -118,6 +118,7 @@ class SimpleThread : public ThreadState, public ThreadContext
     }
 
     PCEventQueue pcEventQueue;
+    MMUWatchList mmuWatchList;
     /**
      * An instruction-based event queue. Used for scheduling events based on
      * number of instructions committed.
@@ -175,6 +176,9 @@ class SimpleThread : public ThreadState, public ThreadContext
 
     bool schedule(PCEvent *e) override { return pcEventQueue.schedule(e); }
     bool remove(PCEvent *e) override { return pcEventQueue.remove(e); }
+    bool open(MMUWatchPoint  *e) override { return mmuWatchList.open(e); }
+    bool close(MMUWatchPoint  *e) override { return mmuWatchList.close(e); }
+
 
     void
     scheduleInstCountEvent(Event *event, Tick count) override

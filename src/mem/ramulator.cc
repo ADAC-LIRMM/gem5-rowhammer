@@ -11,6 +11,8 @@
 #include "debug/Ramulator.hh"
 #include "sim/system.hh"
 
+using namespace gem5;
+
 Ramulator::Ramulator(const Params &p):
     AbstractMemory(p),
     port(name() + ".port", *this),
@@ -48,29 +50,30 @@ void Ramulator::init()
 {
     AbstractMemory::init();
 
-    if (!port.isConnected()){
+    if (!port.isConnected()) {
         fatal("Ramulator port %s is not connected\n", name());
     } else {
         port.sendRangeChange();
     }
 
     // initialize the Ramulator wrapper
+    configs["SimObjectName"]=name();
+    warn("ramulator defined with %s",configs["SimObjectName"]);
     wrapper = new ramulator::Gem5Wrapper(configs, system()->cacheLineSize());
-    ticks_per_clk = Tick(wrapper->tCK * SimClock::Float::ns);
+    ticks_per_clk = Tick(wrapper->tCK * sim_clock::as_float::ns);
 
     DPRINTF(Ramulator,
     "Initialzed Ramulator with config file '%s' (tCK=%lf, %d ticks per clk)\n",
     config_file.c_str(), wrapper->tCK, ticks_per_clk);
 
-    //Callback* cb = new MakeCallback<ramulator::Gem5Wrapper,
-    //&ramulator::Gem5Wrapper::finish>(wrapper);
-    //registerExitCallback(cb);
     registerExitCallback([this]() { wrapper->finish(); });
 
     wrapper->set_refresh_callback(refresh_cb_func);
 
-    memory_corruption->init(*this);
+    if (memory_corruption != nullptr)
+        memory_corruption->init(*this);
 }
+
 
 void Ramulator::startup() {
     DPRINTF(Ramulator, "Ramulator::startup()\n");
@@ -239,9 +242,10 @@ void Ramulator::readComplete(ramulator::Request& req){
 
     // added counter to track requests in flight
     --requestsInFlight;
+
     if (this->memory_corruption != nullptr
         && req.row_access_result != ramulator::Request::RowAccessResult::HIT) {
-        this->memory_corruption->onACT(*this, req.addr_vec);
+        this->memory_corruption->onACT(req.addr_vec);
     }
 
     accessAndRespond(pkt);
@@ -255,7 +259,7 @@ void Ramulator::writeComplete(ramulator::Request& req){
 
     if (this->memory_corruption != nullptr
         && req.row_access_result != ramulator::Request::RowAccessResult::HIT) {
-        this->memory_corruption->onACT(*this, req.addr_vec);
+        this->memory_corruption->onACT(req.addr_vec);
     }
 
     if (numOutstanding() == 0)
@@ -267,7 +271,7 @@ void Ramulator::refreshComplete(ramulator::Request& req){
             req.addr_vec[3], req.addr_vec[4], req.addr_vec[5]);
 
     if (this->memory_corruption != nullptr) {
-        this->memory_corruption->onREF(*this, req.addr_vec);
+        this->memory_corruption->onREF(req.addr_vec);
     }
 }
 

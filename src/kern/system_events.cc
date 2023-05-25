@@ -36,7 +36,7 @@
 namespace gem5
 {
 
-void
+bool
 SkipFuncBase::process(ThreadContext *tc)
 {
     std::unique_ptr<PCStateBase> old_pc(tc->pcState().clone());
@@ -45,6 +45,7 @@ SkipFuncBase::process(ThreadContext *tc)
 
     DPRINTF(PCEvent, "skipping %s: pc = %s, newpc = %s\n", description,
             *old_pc, tc->pcState());
+    return false;
 }
 
 } // namespace gem5

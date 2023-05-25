@@ -71,19 +71,19 @@ class SparcMacroInst : public SparcStaticInst
     }
 
     Fault
-    execute(ExecContext *, trace::InstRecord *) const override
+    execute(ExecContext *, Trace::InstRecord *) const override
     {
         panic("Tried to execute a macroop directly!\n");
     }
 
     Fault
-    initiateAcc(ExecContext *, trace::InstRecord *) const override
+    initiateAcc(ExecContext *, Trace::InstRecord *) const override
     {
         panic("Tried to execute a macroop directly!\n");
     }
 
     Fault
-    completeAcc(PacketPtr, ExecContext *, trace::InstRecord *) const override
+    completeAcc(PacketPtr, ExecContext *, Trace::InstRecord *) const override
     {
         panic("Tried to execute a macroop directly!\n");
     }

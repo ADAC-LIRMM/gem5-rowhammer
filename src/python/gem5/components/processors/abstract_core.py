@@ -122,36 +122,29 @@ class AbstractCore(SubSystem):
         raise NotImplementedError
 
     @abstractmethod
-    def _set_simpoint(
-        self, inst_starts: List[int], board_initialized: bool
-    ) -> None:
+    def set_simpoint(self, inst_starts: List[int], init: bool) -> None:
         """Schedule simpoint exit events for the core.
 
         This is used to raise SIMPOINT_BEGIN exit events in the gem5 standard
-        library. This is called through the set_workload functions and should
-        not be called directly. Duplicate instruction counts in the inst_starts list will not
-        be scheduled.
+        library.
 
         :param inst_starts: a list of SimPoints starting instructions
-        :param board_initialized: True if the board has already been
-        initialized, otherwise False. This parameter is necessary as simpoints
-        are setup differently dependent on this.
+        :param init: if it is True, the starting instructions will be scheduled
+        at the init stage of the core, else, the starting insructions will be
+        scheduled during the simulation
         """
         raise NotImplementedError("This core type does not support simpoints")
 
     @abstractmethod
-    def _set_inst_stop_any_thread(
-        self, inst: int, board_initialized: bool
-    ) -> None:
+    def set_inst_stop_any_thread(self, inst: int, init: bool) -> None:
         """Schedule an exit event when any thread in this core reaches the
-        given number of instructions. This is called through the simulator
-        module and should not be called directly.
+        given number of instructions.
 
         This is used to raise MAX_INSTS exit event in the gem5 standard library
 
         :param inst: a number of instructions
-        :param board_initialized: True if the board has already been
-        initialized, otherwise False. This parameter is necessary as the
-        instruction stop is setup differently dependent on this.
+        :param init: if it is True, the exit event will be scheduled at the
+        init stage of the core, else, it will be scheduled during the
+        simulation
         """
         raise NotImplementedError("This core type does not support MAX_INSTS")

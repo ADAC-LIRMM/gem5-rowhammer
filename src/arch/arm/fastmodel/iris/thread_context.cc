@@ -604,24 +604,11 @@ ThreadContext::pcState(const PCStateBase &val)
     call().resource_write(_instId, result, pcRscId, pc);
 }
 
-iris::ResourceId
-ThreadContext::getMiscRegRscId(RegIndex misc_reg) const
-{
-    iris::ResourceId rsc_id = iris::IRIS_UINT64_MAX;
-    if (misc_reg < miscRegIds.size())
-        rsc_id = miscRegIds.at(misc_reg);
-
-    panic_if(rsc_id == iris::IRIS_UINT64_MAX,
-             "Misc reg %s is not supported by fast model.",
-             ArmISA::miscRegClass[misc_reg]);
-    return rsc_id;
-}
-
 RegVal
 ThreadContext::readMiscRegNoEffect(RegIndex misc_reg) const
 {
     iris::ResourceReadResult result;
-    call().resource_read(_instId, result, getMiscRegRscId(misc_reg));
+    call().resource_read(_instId, result, miscRegIds.at(misc_reg));
     return result.data.at(0);
 }
 
@@ -629,7 +616,7 @@ void
 ThreadContext::setMiscRegNoEffect(RegIndex misc_reg, const RegVal val)
 {
     iris::ResourceWriteResult result;
-    call().resource_write(_instId, result, getMiscRegRscId(misc_reg), val);
+    call().resource_write(_instId, result, miscRegIds.at(misc_reg), val);
 }
 
 RegVal
@@ -779,43 +766,29 @@ ThreadContext::getWritableReg(const RegId &reg)
     }
 }
 
-iris::ResourceId
-ThreadContext::getIntRegRscId(RegIndex int_reg) const
-{
-    ArmISA::CPSR cpsr = readMiscRegNoEffect(ArmISA::MISCREG_CPSR);
-    auto &regIds = cpsr.width ? intReg32Ids : intReg64Ids;
-    iris::ResourceId rsc_id = iris::IRIS_UINT64_MAX;
-    if (int_reg < regIds.size())
-        rsc_id = regIds.at(int_reg);
-
-    panic_if(rsc_id == iris::IRIS_UINT64_MAX,
-             "Int reg %s is not supported by fast model.",
-             ArmISA::intRegClass[int_reg]);
-    return rsc_id;
-}
-
 RegVal
 ThreadContext::readIntReg(RegIndex reg_idx) const
 {
+    ArmISA::CPSR cpsr = readMiscRegNoEffect(ArmISA::MISCREG_CPSR);
+
     iris::ResourceReadResult result;
-    call().resource_read(_instId, result, getIntRegRscId(reg_idx));
+    if (cpsr.width)
+        call().resource_read(_instId, result, intReg32Ids.at(reg_idx));
+    else
+        call().resource_read(_instId, result, intReg64Ids.at(reg_idx));
     return result.data.at(0);
 }
 
 void
 ThreadContext::setIntReg(RegIndex reg_idx, RegVal val)
 {
-    iris::ResourceWriteResult result;
-    call().resource_write(_instId, result, getIntRegRscId(reg_idx), val);
-}
+    ArmISA::CPSR cpsr = readMiscRegNoEffect(ArmISA::MISCREG_CPSR);
 
-iris::ResourceId
-ThreadContext::getIntRegFlatRscId(RegIndex int_reg) const
-{
-    iris::ResourceId rsc_id = iris::IRIS_UINT64_MAX;
-    if (int_reg < flattenedIntIds.size())
-        rsc_id = flattenedIntIds.at(int_reg);
-    return rsc_id;
+    iris::ResourceWriteResult result;
+    if (cpsr.width)
+        call().resource_write(_instId, result, intReg32Ids.at(reg_idx), val);
+    else
+        call().resource_write(_instId, result, intReg64Ids.at(reg_idx), val);
 }
 
 /*
@@ -825,63 +798,45 @@ ThreadContext::getIntRegFlatRscId(RegIndex int_reg) const
 RegVal
 ThreadContext::readIntRegFlat(RegIndex idx) const
 {
-    auto rsc_id = getIntRegFlatRscId(idx);
-    if (rsc_id == iris::IRIS_UINT64_MAX)
+    if (idx >= flattenedIntIds.size())
+        return 0;
+    iris::ResourceId res_id = flattenedIntIds.at(idx);
+    if (res_id == iris::IRIS_UINT64_MAX)
         return 0;
     iris::ResourceReadResult result;
-    call().resource_read(_instId, result, rsc_id);
+    call().resource_read(_instId, result, res_id);
     return result.data.at(0);
 }
 
 void
 ThreadContext::setIntRegFlat(RegIndex idx, uint64_t val)
 {
-    auto rsc_id = getIntRegFlatRscId(idx);
-    panic_if(rsc_id == iris::IRIS_UINT64_MAX,
-             "Int reg %s is not supported by fast model.",
-             ArmISA::intRegClass[idx]);
+    iris::ResourceId res_id =
+        (idx >= flattenedIntIds.size()) ? iris::IRIS_UINT64_MAX :
+        flattenedIntIds.at(idx);
+    panic_if(res_id == iris::IRIS_UINT64_MAX,
+            "Int reg %d is not supported by fast model.", idx);
     iris::ResourceWriteResult result;
-    call().resource_write(_instId, result, rsc_id, val);
-}
-
-iris::ResourceId
-ThreadContext::getCCRegFlatRscId(RegIndex cc_reg) const
-{
-    iris::ResourceId rsc_id = iris::IRIS_UINT64_MAX;
-    if (cc_reg < ccRegIds.size())
-        rsc_id = ccRegIds.at(cc_reg);
-    return rsc_id;
+    call().resource_write(_instId, result, flattenedIntIds.at(idx), val);
 }
 
 RegVal
 ThreadContext::readCCRegFlat(RegIndex idx) const
 {
-    auto rsc_id = getCCRegFlatRscId(idx);
-    if (rsc_id == iris::IRIS_UINT64_MAX)
+    if (idx >= ccRegIds.size())
         return 0;
     iris::ResourceReadResult result;
-    call().resource_read(_instId, result, rsc_id);
+    call().resource_read(_instId, result, ccRegIds.at(idx));
     return result.data.at(0);
 }
 
 void
 ThreadContext::setCCRegFlat(RegIndex idx, RegVal val)
 {
-    auto rsc_id = getCCRegFlatRscId(idx);
-    panic_if(rsc_id == iris::IRIS_UINT64_MAX,
-             "CC reg %s is not supported by fast model.",
-             ArmISA::ccRegClass[idx]);
+    panic_if(idx >= ccRegIds.size(),
+            "CC reg %d is not supported by fast model.", idx);
     iris::ResourceWriteResult result;
-    call().resource_write(_instId, result, rsc_id, val);
-}
-
-iris::ResourceId
-ThreadContext::getVecRegRscId(RegIndex vec_reg) const
-{
-    iris::ResourceId rsc_id = iris::IRIS_UINT64_MAX;
-    if (vec_reg < vecRegIds.size())
-        rsc_id = vecRegIds.at(vec_reg);
-    return rsc_id;
+    call().resource_write(_instId, result, ccRegIds.at(idx), val);
 }
 
 const ArmISA::VecRegContainer &
@@ -894,12 +849,11 @@ ThreadContext::readVecReg(const RegId &reg_id) const
     // Ignore accesses to registers which aren't architected. gem5 defines a
     // few extra registers which it uses internally in the implementation of
     // some instructions.
-    auto rsc_id = getVecRegRscId(reg_id);
-    if (rsc_id == iris::IRIS_UINT64_MAX)
+    if (idx >= vecRegIds.size())
         return reg;
 
     iris::ResourceReadResult result;
-    call().resource_read(_instId, result, rsc_id);
+    call().resource_read(_instId, result, vecRegIds.at(idx));
     size_t data_size = result.data.size() * (sizeof(*result.data.data()));
     size_t size = std::min(data_size, reg.size());
     memcpy(reg.as<uint8_t>(), (void *)result.data.data(), size);
@@ -913,15 +867,6 @@ ThreadContext::readVecRegFlat(RegIndex idx) const
     return readVecReg(ArmISA::vecRegClass[idx]);
 }
 
-iris::ResourceId
-ThreadContext::getVecPredRegRscId(RegIndex vec_reg) const
-{
-    iris::ResourceId rsc_id = iris::IRIS_UINT64_MAX;
-    if (vec_reg < vecPredRegIds.size())
-        rsc_id = vecPredRegIds.at(vec_reg);
-    return rsc_id;
-}
-
 const ArmISA::VecPredRegContainer &
 ThreadContext::readVecPredReg(const RegId &reg_id) const
 {
@@ -930,12 +875,11 @@ ThreadContext::readVecPredReg(const RegId &reg_id) const
     ArmISA::VecPredRegContainer &reg = vecPredRegs.at(idx);
     reg.reset();
 
-    auto rsc_id = getVecPredRegRscId(reg_id);
-    if (rsc_id == iris::IRIS_UINT64_MAX)
+    if (idx >= vecPredRegIds.size())
         return reg;
 
     iris::ResourceReadResult result;
-    call().resource_read(_instId, result, rsc_id);
+    call().resource_read(_instId, result, vecPredRegIds.at(idx));
 
     size_t offset = 0;
     size_t num_bits = reg.NUM_BITS;

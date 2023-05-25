@@ -50,6 +50,7 @@
 #include "arch/generic/pcstate.hh"
 #include "base/types.hh"
 #include "cpu/pc_event.hh"
+#include "cpu/mmu_watch.hh"
 #include "cpu/reg_class.hh"
 
 namespace gem5
@@ -85,7 +86,7 @@ using PacketPtr = Packet *;
  * interface; the ExecContext is a more implicit interface that must
  * be implemented so that the ISA can access whatever state it needs.
  */
-class ThreadContext : public PCEventScope
+class ThreadContext : public PCEventScope, public MMUWatchScope
 {
   protected:
     bool useForClone = false;

@@ -42,7 +42,6 @@
 #include "mem/ruby/system/Sequencer.hh"
 
 #include "arch/x86/ldstflags.hh"
-#include "base/compiler.hh"
 #include "base/logging.hh"
 #include "base/str.hh"
 #include "cpu/testers/rubytest/RubyTester.hh"
@@ -230,7 +229,7 @@ Sequencer::wakeup()
     Cycles current_time = curCycle();
 
     // Check across all outstanding requests
-    GEM5_VAR_USED int total_outstanding = 0;
+    int total_outstanding = 0;
 
     for (const auto &table_entry : m_RequestTable) {
         for (const auto &seq_req : table_entry.second) {

@@ -211,6 +211,21 @@ System::System(const Params &p)
     // Set back pointers to the system in all memories
     for (int x = 0; x < params().memories.size(); x++)
         params().memories[x]->system(this);
+
+    std::vector<std::string> mem_sources = p.init_memory_content_pmems;
+    std::vector<int> storeIds = p.init_memory_content_storeIds;
+    panic_if (mem_sources.size() != storeIds.size(), "number of .pmem files "
+        "to copy from should match number of store ids to copy to");
+    if (mem_sources.size() > 0)
+    {
+        for (int i=0; i < mem_sources.size(); i++)
+        {
+            std::string pmem_file = mem_sources[i];
+            int storeId = storeIds[i];
+            this->physmem.loadMemoryData(storeId, pmem_file);
+        }
+    }
+
 }
 
 System::~System()
@@ -263,6 +278,26 @@ System::remove(PCEvent *event)
         all = tc->remove(event) && all;
     return all;
 }
+bool
+System::open(MMUWatchPoint *wp)
+{
+    bool all = true;
+    liveWatchs.push_back(wp);
+    for (auto *tc: threads)
+        all = tc->open(wp) && all;
+    return all;
+}
+
+bool
+System::close(MMUWatchPoint *wp)
+{
+    bool all = true;
+    liveWatchs.remove(wp);
+    for (auto *tc: threads)
+        all = tc->close(wp) && all;
+    return all;
+}
+
 
 void
 System::replaceThreadContext(ThreadContext *tc, ContextID context_id)
@@ -391,7 +426,7 @@ System::workItemEnd(uint32_t tid, uint32_t workid)
 }
 
 bool
-System::trapToGdb(int signal, ContextID ctx_id) const
+System::trapToGdb(GDBSignal signal, ContextID ctx_id) const
 {
     return workload->trapToGdb(signal, ctx_id);
 }

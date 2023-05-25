@@ -54,10 +54,10 @@
 namespace gem5
 {
 
-namespace trace {
+namespace Trace {
 
 void
-ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
+Trace::ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
 {
     std::stringstream outs;
 
@@ -142,13 +142,13 @@ ExeTracerRecord::traceInst(const StaticInstPtr &inst, bool ran)
     //
     outs << std::endl;
 
-    trace::getDebugLogger()->dprintf_flag(
+    Trace::getDebugLogger()->dprintf_flag(
         when, thread->getCpuPtr()->name(), "ExecEnable", "%s",
         outs.str().c_str());
 }
 
 void
-ExeTracerRecord::dump()
+Trace::ExeTracerRecord::dump()
 {
     /*
      * The behavior this check tries to achieve is that if ExecMacro is on,
@@ -170,5 +170,5 @@ ExeTracerRecord::dump()
     }
 }
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5

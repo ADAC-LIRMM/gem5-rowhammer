@@ -81,7 +81,7 @@ def get_isa_from_str(input: str) -> ISA:
             return isa
 
     valid_isas_str_list = str()
-    for isa_str in get_isas_str_set():
+    for isa_str in get_isa_from_str():
         valid_isas_str_list += f"{os.linesep}{isa_str}"
 
     raise Exception(

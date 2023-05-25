@@ -40,7 +40,7 @@ from m5.proxy import *
 
 m5.util.addToPath("../configs/")
 from common import FSConfig
-from base_caches import *
+from common.Caches import *
 from base_config import *
 from common.cores.arm.O3_ARM_v7a import *
 from common.Benchmarks import SysConfig
@@ -96,7 +96,6 @@ class LinuxArmSystemBuilder(object):
           system -- System to work on.
         """
         system.kvm_vm = KvmVM()
-        system.release = ArmDefaultRelease.for_kvm()
 
         # Arm KVM regressions will use a simulated GIC. This means that in
         # order to work we need to remove the system interface of the

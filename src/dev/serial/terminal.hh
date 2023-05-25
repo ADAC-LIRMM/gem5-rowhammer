@@ -96,14 +96,14 @@ class Terminal : public SerialDevice
 
   public:
     typedef TerminalParams Params;
-    Terminal(const Params &p);
+    Terminal(Params &p);
     ~Terminal();
     OutputStream * terminalDump(const TerminalParams &p);
 
   protected:
     ListenSocket listener;
 
-    void listen(int port);
+    void listen(uint16_t& port);
     void accept();
 
   protected:

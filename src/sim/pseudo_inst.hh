@@ -96,6 +96,10 @@ void m5Syscall(ThreadContext *tc);
 void togglesync(ThreadContext *tc);
 void triggerWorkloadEvent(ThreadContext *tc);
 
+//My functions
+uint64_t m5env(ThreadContext *tc, Addr vaddr, 
+  uint64_t len,Addr varname_addr);
+
 /**
  * Execute a decoded M5 pseudo instruction
  *
@@ -214,7 +218,9 @@ pseudoInstWork(ThreadContext *tc, uint8_t func, uint64_t &result)
         invokeSimcall<ABI>(tc, workend);
         return true;
 
-      case M5OP_RESERVED1:
+      case M5OP_M5ENV:
+          result = invokeSimcall<ABI, store_ret>(tc, m5env);
+          return true;
       case M5OP_RESERVED2:
       case M5OP_RESERVED3:
       case M5OP_RESERVED4:

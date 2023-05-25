@@ -126,13 +126,6 @@ flit::print(std::ostream& out) const
 }
 
 bool
-flit::functionalRead(Packet *pkt, WriteMask &mask)
-{
-    Message *msg = m_msg_ptr.get();
-    return msg->functionalRead(pkt, mask);
-}
-
-bool
 flit::functionalWrite(Packet *pkt)
 {
     Message *msg = m_msg_ptr.get();

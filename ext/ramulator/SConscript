@@ -7,16 +7,16 @@
 #
 import os
 
-Import('main')
+Import('env')
 
 # See if we got a cloned DRAMSim2 repo as a subdirectory and set the
 # HAVE_RAMULATOR flag accordingly
 if not os.path.exists(Dir('.').srcnode().abspath + '/Ramulator'):
-    main['HAVE_RAMULATOR'] = False
+    env['HAVE_RAMULATOR'] = False
     Return()
 
 # We have got the folder, so add the library and build the wrappers
-main['HAVE_RAMULATOR'] = True
+env['HAVE_RAMULATOR'] = True
 
 # Add the appropriate files. We leave out the trace driven simulator
 dram_files = []
@@ -41,16 +41,17 @@ DRAMFile('TLDRAM.cpp')
 DRAMFile('ALDRAM.cpp')
 
 # Ramulator doesn't comply with some specific GCC warnings
-dramenv = main.Clone()
+dramenv = env.Clone()
 dramenv.Append(CXXFLAGS=['-Wno-missing-field-initializers'])
 dramenv.Append(CXXFLAGS=['-Wno-unused-variable'])
 dramenv.Append(CXXFLAGS=['-Wno-reorder'])
 
 # added support to hook in gem5 headers
-dramenv.Append(CPPPATH = Dir('../../src/'))
-
+dramenv.ConfigFile(["HAVE_DEPRECATED_NAMESPACE"])
+dramenv.Append(CPPPATH = Dir('../../'))
+dramenv.Append(CPPPATH = Dir('.'))
 dramenv.Library('ramulator', [dramenv.SharedObject(f) for f in dram_files])
 
-main.Prepend(CPPPATH=Dir('.'))
-main.Append(LIBS=['ramulator'])
-main.Prepend(LIBPATH=[Dir('.')])
+env.Prepend(CPPPATH=Dir('.'))
+env.Append(LIBS=['ramulator'])
+env.Prepend(LIBPATH=[Dir('.')])

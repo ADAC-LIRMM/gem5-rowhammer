@@ -44,7 +44,7 @@ namespace gem5
 
 class ThreadContext;
 
-namespace trace {
+namespace Trace {
 
 class NativeTrace;
 
@@ -117,7 +117,7 @@ class NativeTrace : public ExeTracer
     check(NativeTraceRecord *record) = 0;
 };
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5
 
 #endif // __CPU_NATIVETRACE_HH__

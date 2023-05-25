@@ -39,6 +39,7 @@ from m5.objects.ArmSystem import ArmRelease
 from m5.objects.ArmTLB import ArmTLB, ArmStage2TLB
 from m5.objects.BaseMMU import BaseMMU
 from m5.objects.ClockedObject import ClockedObject
+from m5.objects.XBar import NoncoherentXBar
 from m5.params import *
 from m5.proxy import *
 

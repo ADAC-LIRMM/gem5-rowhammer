@@ -1,4 +1,4 @@
-# Copyright (c) 2021,2022 ARM Limited
+# Copyright (c) 2021 ARM Limited
 # All rights reserved.
 #
 # The license below extends only to copyright in the software and shall
@@ -183,16 +183,6 @@ class OrderedTriggerMessageBuffer(TriggerMessageBuffer):
     ordered = True
 
 
-class MemCtrlMessageBuffer(MessageBuffer):
-    """
-    MessageBuffer exchanging messages with the memory
-    These buffers should also not be affected by the Ruby tester randomization.
-    """
-
-    randomization = "disabled"
-    ordered = True
-
-
 class CHI_Cache_Controller(Cache_Controller):
     """
     Default parameters for a Cache controller
@@ -216,7 +206,7 @@ class CHI_Cache_Controller(Cache_Controller):
         # triggers. To limit the controller performance, tweak other
         # params such as: input port buffer size, cache banks, and output
         # port latency
-        self.transitions_per_cycle = 1024
+        self.transitions_per_cycle = 128
         # This should be set to true in the data cache controller to enable
         # timeouts on unique lines when a store conditional fails
         self.sc_lock_enabled = False
@@ -677,17 +667,9 @@ class CHI_SNF_Base(CHI_Node):
             version=Versions.getVersion(Memory_Controller),
             ruby_system=ruby_system,
             triggerQueue=TriggerMessageBuffer(),
-            responseFromMemory=MemCtrlMessageBuffer(),
-            requestToMemory=MemCtrlMessageBuffer(),
+            responseFromMemory=MessageBuffer(),
+            requestToMemory=MessageBuffer(ordered=True),
             reqRdy=TriggerMessageBuffer(),
-            transitions_per_cycle=1024,
-        )
-
-        # The Memory_Controller implementation deallocates the TBE for
-        # write requests when they are queue up to memory. The size of this
-        # buffer must be limited to prevent unlimited outstanding writes.
-        self._cntrl.requestToMemory.buffer_size = (
-            int(self._cntrl.to_memory_controller_latency) + 1
         )
 
         self.connectController(self._cntrl)

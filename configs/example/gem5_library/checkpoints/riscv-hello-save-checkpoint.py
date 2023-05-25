@@ -43,7 +43,6 @@ scons build/RISCV/gem5.opt
 ```
 """
 
-import argparse
 from gem5.isas import ISA
 from gem5.utils.requires import requires
 from gem5.resources.resource import Resource
@@ -53,18 +52,6 @@ from gem5.components.boards.simple_board import SimpleBoard
 from gem5.components.cachehierarchies.classic.no_cache import NoCache
 from gem5.components.processors.simple_processor import SimpleProcessor
 from gem5.simulate.simulator import Simulator
-
-parser = argparse.ArgumentParser()
-
-parser.add_argument(
-    "--checkpoint-path",
-    type=str,
-    required=False,
-    default="riscv-hello-checkpoint/",
-    help="The directory to store the checkpoint.",
-)
-
-args = parser.parse_args()
 
 # This check ensures the gem5 binary is compiled to the RISCV ISA target.
 # If not, an exception will be thrown.
@@ -115,6 +102,7 @@ print(
     )
 )
 
-print("Taking a checkpoint at", args.checkpoint_path)
-simulator.save_checkpoint(args.checkpoint_path)
+checkpoint_path = "riscv-hello-checkpoint/"
+print("Taking a checkpoint at", checkpoint_path)
+simulator.save_checkpoint(checkpoint_path)
 print("Done taking a checkpoint")

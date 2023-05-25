@@ -158,7 +158,7 @@ class Artifact:
         documentation: str,
         inputs: List["Artifact"] = [],
         architecture: str = "",
-        size: Optional[int] = None,
+        size: int = None,
         is_zipped: bool = False,
         md5sum: str = "",
         url: str = "",

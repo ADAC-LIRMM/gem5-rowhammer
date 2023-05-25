@@ -125,30 +125,6 @@ def addNoISAOptions(parser):
     )
 
     # Memory Options
-<<<<<<< HEAD
-    parser.add_option("--list-mem-types",
-                      action="callback", callback=_listMemTypes,
-                      help="List available memory types")
-    parser.add_option("--mem-type", type="choice", default="DDR3_1600_8x8",
-                      choices=ObjectList.mem_list.get_names(),
-                      help = "type of memory to use")
-    parser.add_option("--mem-channels", type="int", default=1,
-                      help = "number of memory channels")
-    parser.add_option("--mem-ranks", type="int", default=None,
-                      help = "number of memory ranks per channel")
-    parser.add_option("--mem-size", action="store", type="string",
-                      default="512MB",
-                      help="Specify the physical memory size (single memory)")
-    parser.add_option("--enable-dram-powerdown", action="store_true",
-                       help="Enable low-power states in DRAMInterface")
-    parser.add_option("--mem-channels-intlv", type="int", default=0,
-                      help="Memory channels interleave")
-    parser.add_option("--ramulator-config", type="string",
-                      dest="ramulator_config",
-                      help="Specify the Ramulator configuration file")
-
-    parser.add_option("--memchecker", action="store_true")
-=======
     parser.add_argument(
         "--list-mem-types",
         action=ListMem,
@@ -190,7 +166,13 @@ def addNoISAOptions(parser):
     )
 
     parser.add_argument("--memchecker", action="store_true")
->>>>>>> 5fa484e2e02604ad3a5bf01f35ad1f97ca6d17b8
+    parser.add_argument(
+        "--ramulator-config",
+        type=str,
+        dest="ramulator_config",
+        help="Specify the Ramulator configuration file",
+    )
+    parser.add_argument("--membus-lat", type=int, default=4)
 
     # Cache Options
     parser.add_argument(
@@ -892,66 +874,6 @@ def addFSOptions(parser):
     )
 
     # Command line options
-<<<<<<< HEAD
-    parser.add_option("--command-line", action="store", type="string",
-                      default=None,
-                      help="Template for the kernel command line.")
-    parser.add_option("--command-line-file", action="store",
-                      default=None, type="string",
-                      help="File with a template for the kernel command line")
-
-    # Debug option
-    parser.add_argument("--wait-gdb", default=False, action='store_true',
-                        help="Wait for remote GDB to connect.")
-
-def addRowhammerOptions(parser):
-
-    parser.add_option("--rowhammer-enable", action="store_true",
-                      default=False, dest="rowhammer_enable",
-                      help="Enable rowhammer effect analysis")
-    parser.add_option("--rowhammer-threshold", action="store", type="int",
-                      default=50000, dest="rowhammer_threshold",
-                      help="Access count for bit-flip of victim row")
-    parser.add_option("--rowhammer-rand-seed", action="store", type="int",
-                      default=random()*(2**31), dest="rowhammer_rand_seed",
-                      help="random seed for memory corruption")
-    parser.add_option("--rowhammer-enable-corruption", action="store_true",
-                      default=False, dest="rowhammer_enable_corruption",
-                      help="Enable host memory clear when RH threshold is met")
-    parser.add_option('--dram-layout', action="store", type="string",
-                      default=None, dest="dram_layout",
-                      help="DRAM row placement file for adjacency computation")
-    parser.add_option('--rowhammer-bit-flip-polynomial',
-                      default="1", type="str", dest="rowhammer_polynomial")
-
-    parser.add_option('--rowhammer-mitigation', type="choice", default=None,
-                      choices=ObjectList.rh_mitigation_list.get_names(),
-                      dest="rowhammer_mitigation")
-
-    parser.add_option('--rowhammer-para-probabilty', type="float",
-                      default="0.001", dest="rowhammer_para_probability")
-
-    parser.add_option('--rowhammer-cbf-nb-counters', type="int", default=1024,
-                      help="Number of counters in counting bloom filter")
-    parser.add_option('--rowhammer-cbf-count-limit', type="int", default=1<<16,
-                      help="Maximum value CBF counters can reach")
-    parser.add_option('--rowhammer-cbf-threshold', type="int", default=1<<14,
-                      help="Rowhammer detection threshold")
-    parser.add_option('--rowhammer-cbf-nb-hashes', type="int", default=3,
-                      help="number of counterss incremented when a row"
-                      " is activated")
-    parser.add_option('--rowhammer-cbf-multipliers', nargs="+", type="int",
-                      default=[],
-                      help="multipliers to apply to counters incrementation,"
-                      " one for each association made by the hash function")
-    parser.add_option('--rowhammer-cbf-threshold-incr', type="int", default=0,
-                      help="increment the threshold for detected aggressors"
-                      " after refreshing its neighbors, instead of substracting"
-                      " the threshold from the counters")
-    parser.add_option('--rowhammer-cbf-level', type="int", default=0,
-                      help="implementation level : 0 for Bank, 1 for Bank"
-                      " Group, 2 for Rank, 3 for Channel. Default: Bank level")
-=======
     parser.add_argument(
         "--command-line",
         action="store",
@@ -974,4 +896,130 @@ def addRowhammerOptions(parser):
         action="store_true",
         help="Wait for remote GDB to connect.",
     )
->>>>>>> 5fa484e2e02604ad3a5bf01f35ad1f97ca6d17b8
+
+
+def addRowhammerOptions(parser):
+
+    parser.add_argument(
+        "--rowhammer-enable",
+        default=False,
+        action="store_true",
+        dest="rowhammer_enable",
+        help="Enable rowhammer effect analysis",
+    )
+    parser.add_argument(
+        "--rowhammer-threshold",
+        default=50000,
+        action="store",
+        type=int,
+        dest="rowhammer_threshold",
+        help="Access count for bit-flip of victim row",
+    )
+    parser.add_argument(
+        "--rowhammer-rand-seed",
+        default=random() * (2**31),
+        action="store",
+        type=int,
+        dest="rowhammer_rand_seed",
+        help="random seed for memory corruption",
+    )
+    parser.add_argument(
+        "--rowhammer-enable-corruption",
+        default=False,
+        action="store_true",
+        dest="rowhammer_enable_corruption",
+        help="Enable host memory clear when RH threshold is met",
+    )
+    parser.add_argument(
+        "--dram-layout",
+        default=None,
+        action="store",
+        type=str,
+        dest="dram_layout",
+        help="DRAM row placement file for adjacency computation",
+    )
+    parser.add_argument(
+        "--rowhammer-bit-flip-polynomial",
+        default="1",
+        type=str,
+        dest="rowhammer_polynomial",
+    )
+    parser.add_argument(
+        "--rowhammer-mitigation",
+        default=None,
+        choices=ObjectList.rh_mitigation_list.get_names(),
+        dest="rowhammer_mitigation",
+    )
+    parser.add_argument(
+        "--rowhammer-para-probabilty",
+        default="0.001",
+        type=float,
+        dest="rowhammer_para_probability",
+    )
+
+    parser.add_argument(
+        "--rowhammer-cbf-nb-counters",
+        default=1024,
+        type=int,
+        help="Number of counters in counting bloom filter",
+    )
+    parser.add_argument(
+        "--rowhammer-cbf-count-limit",
+        default=1 << 16,
+        type=int,
+        help="Maximum value CBF counters can reach",
+    )
+    parser.add_argument(
+        "--rowhammer-cbf-threshold",
+        default=1 << 14,
+        type=int,
+        help="Rowhammer detection threshold",
+    )
+    parser.add_argument(
+        "--rowhammer-cbf-nb-hashes",
+        default=3,
+        type=int,
+        help="number of counterss incremented when a row" " is activated",
+    )
+    parser.add_argument(
+        "--rowhammer-cbf-multipliers",
+        default=[],
+        nargs="+",
+        type=int,
+        help="multipliers to apply to counters incrementation, "
+        "one for each association made by the hash function",
+    )
+    parser.add_argument(
+        "--rowhammer-cbf-threshold-incr",
+        default=0,
+        type=int,
+        help="increment the threshold for detected aggressors "
+        "after refreshing its neighbors, instead of substracting "
+        "the threshold from the counters",
+    )
+    parser.add_argument(
+        "--rowhammer-cbf-level",
+        default=0,
+        type=int,
+        help="implementation level : 0 for Bank, 1 for Bank "
+        "Group, 2 for Rank, 3 for Channel. Default: Bank level",
+    )
+
+def addColdBootOptions(parser) :
+
+    parser.add_argument(
+        "--memory-init-pmems",
+        default=[],
+        nargs="+",
+        type=str,
+        help=" .pmem file from from which the content should be copied from "
+        "for cold-boot attacks."
+    )
+    parser.add_argument(
+        "--memory-init-storeids",
+        default=[],
+        nargs="+",
+        type=int,
+        help="Target storage id of the simulation to copy the memory to for "
+        "cold-boot attacks. Requires --coldboot-cpt-num to be set. Default: 0"
+    )

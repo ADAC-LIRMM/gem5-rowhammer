@@ -15,7 +15,7 @@ be built through SCons.
 To build and run all the unit tests:
 
 ```shell
-scons build/ALL/unittests.opt
+scons build/NULL/unittests.opt
 ```
 
 All unit tests should be run prior to posting a patch to
@@ -25,20 +25,20 @@ To compile and run just one set of tests (e.g. those declared within
 `src/base/bitunion.test.cc`):
 
 ```shell
-scons build/ALL/base/bitunion.test.opt
-./build/ALL/base/bitunion.test.opt
+scons build/NULL/base/bitunion.test.opt
+./build/NULL/base/bitunion.test.opt
 ```
 
 To list the available test functions from a test file:
 
 ```shell
-./build/ALL/base/bitunion.test.opt --gtest_list_tests
+./build/NULL/base/bitunion.test.opt --gtest_list_tests
 ```
 
 To run a specific test function (e.g., BitUnionData.NormalBitfield):
 
 ```shell
-./build/ALL/base/bitunion.test.opt --gtest_filter=BitUnionData.NormalBitfield
+./build/NULL/base/bitunion.test.opt --gtest_filter=BitUnionData.NormalBitfield
 ```
 
 # Running system-level tests

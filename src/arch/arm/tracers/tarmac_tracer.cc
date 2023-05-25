@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, 2022 Arm Limited
+ * Copyright (c) 2017-2018 ARM Limited
  * All rights reserved
  *
  * The license below extends only to copyright in the software and shall
@@ -40,15 +40,12 @@
 #include <string>
 
 #include "arch/arm/system.hh"
-#include "base/output.hh"
 #include "cpu/base.hh"
-
-#include "enums/TarmacDump.hh"
 
 namespace gem5
 {
 
-namespace trace {
+namespace Trace {
 
 std::string
 TarmacContext::tarmacCpuName() const
@@ -57,28 +54,8 @@ TarmacContext::tarmacCpuName() const
     return "cpu" + std::to_string(id);
 }
 
-namespace {
-
-OutputStream *
-tarmacDump(const TarmacTracerParams &p)
-{
-    switch (p.outfile) {
-      case TarmacDump::stdoutput:
-        return simout.findOrCreate("stdout");
-      case TarmacDump::stderror:
-        return simout.findOrCreate("stderr");
-      case TarmacDump::file:
-        return simout.findOrCreate(p.name);
-      default:
-        panic("Invalid option\n");
-    }
-}
-
-}
-
 TarmacTracer::TarmacTracer(const Params &p)
   : InstTracer(p),
-    outstream(tarmacDump(p)),
     startTick(p.start_tick),
     endTick(p.end_tick)
 {
@@ -118,11 +95,5 @@ TarmacTracer::getInstRecord(Tick when, ThreadContext *tc,
     }
 }
 
-std::ostream&
-TarmacTracer::output()
-{
-    return *(outstream->stream());
-}
-
-} // namespace trace
+} // namespace Trace
 } // namespace gem5

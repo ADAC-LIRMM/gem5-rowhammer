@@ -40,7 +40,7 @@ from arm_generic import *
 import checkpoint
 
 root = LinuxArmFSSystemUniprocessor(
-    mem_mode="atomic", mem_class=SimpleMemory, cpu_class=ArmAtomicSimpleCPU
+    mem_mode="atomic", mem_class=SimpleMemory, cpu_class=AtomicSimpleCPU
 ).create_root()
 
 run_test = functools.partial(

@@ -58,7 +58,7 @@ GEM5_DEPRECATED_NAMESPACE(Linux, linux);
 namespace linux
 {
 
-void
+bool
 DmesgDump::process(ThreadContext *tc)
 {
     inform("Dumping kernel dmesg buffer to %s...\n", fname);
@@ -67,9 +67,10 @@ DmesgDump::process(ThreadContext *tc)
     simout.close(os);
 
     warn(descr());
+    return false;
 }
 
-void
+bool
 KernelPanic::process(ThreadContext *tc)
 {
     inform("Dumping kernel dmesg buffer to %s...\n", fname);
@@ -78,6 +79,7 @@ KernelPanic::process(ThreadContext *tc)
     simout.close(os);
 
     panic(descr());
+    return false;
 }
 
 void

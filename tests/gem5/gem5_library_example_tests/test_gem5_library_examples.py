@@ -32,11 +32,6 @@ from testlib import *
 import re
 import os
 
-if config.bin_path:
-    resource_path = config.bin_path
-else:
-    resource_path = joinpath(absdirpath(__file__), "..", "resources")
-
 hello_verifier = verifier.MatchRegex(re.compile(r"Hello world!"))
 save_checkpoint_verifier = verifier.MatchRegex(
     re.compile(r"Done taking a checkpoint")
@@ -50,7 +45,7 @@ gem5_verify_config(
         config.base_dir, "configs", "example", "gem5_library", "arm-hello.py"
     ),
     config_args=[],
-    valid_isas=(constants.all_compiled_tag,),
+    valid_isas=(constants.arm_tag,),
     valid_hosts=constants.supported_hosts,
     length=constants.quick_tag,
 )
@@ -67,11 +62,8 @@ gem5_verify_config(
         "checkpoints",
         "riscv-hello-save-checkpoint.py",
     ),
-    config_args=[
-        "--checkpoint-path",
-        joinpath(resource_path, "riscv-hello-checkpoint-save"),
-    ],
-    valid_isas=(constants.all_compiled_tag,),
+    config_args=[],
+    valid_isas=(constants.riscv_tag,),
     valid_hosts=constants.supported_hosts,
     length=constants.quick_tag,
 )
@@ -89,46 +81,7 @@ gem5_verify_config(
         "riscv-hello-restore-checkpoint.py",
     ),
     config_args=[],
-    valid_isas=(constants.all_compiled_tag,),
-    valid_hosts=constants.supported_hosts,
-    length=constants.quick_tag,
-)
-
-gem5_verify_config(
-    name="test-simpoints-se-checkpoint",
-    fixtures=(),
-    verifiers=(),
-    config=joinpath(
-        config.base_dir,
-        "configs",
-        "example",
-        "gem5_library",
-        "checkpoints",
-        "simpoints-se-checkpoint.py",
-    ),
-    config_args=[
-        "--checkpoint-path",
-        joinpath(resource_path, "se_checkpoint_folder-save"),
-    ],
-    valid_isas=(constants.all_compiled_tag,),
-    valid_hosts=constants.supported_hosts,
-    length=constants.quick_tag,
-)
-
-gem5_verify_config(
-    name="test-simpoints-se-restore",
-    fixtures=(),
-    verifiers=(),
-    config=joinpath(
-        config.base_dir,
-        "configs",
-        "example",
-        "gem5_library",
-        "checkpoints",
-        "simpoints-se-restore.py",
-    ),
-    config_args=[],
-    valid_isas=(constants.all_compiled_tag,),
+    valid_isas=(constants.riscv_tag,),
     valid_hosts=constants.supported_hosts,
     length=constants.quick_tag,
 )
@@ -148,7 +101,7 @@ if os.access("/dev/kvm", mode=os.R_OK | os.W_OK):
             "x86-ubuntu-run-with-kvm.py",
         ),
         config_args=[],
-        valid_isas=(constants.all_compiled_tag,),
+        valid_isas=(constants.x86_tag,),
         valid_hosts=(constants.host_x86_64_tag,),
         length=constants.long_tag,
         uses_kvm=True,
@@ -166,7 +119,7 @@ gem5_verify_config(
         "x86-ubuntu-run.py",
     ),
     config_args=[],
-    valid_isas=(constants.all_compiled_tag,),
+    valid_isas=(constants.x86_tag,),
     valid_hosts=constants.supported_hosts,
     length=constants.long_tag,
 )
@@ -186,7 +139,7 @@ if os.access("/dev/kvm", mode=os.R_OK | os.W_OK):
             "x86-parsec-benchmarks.py",
         ),
         config_args=["--benchmark", "blackscholes", "--size", "simsmall"],
-        valid_isas=(constants.all_compiled_tag,),
+        valid_isas=(constants.x86_tag,),
         protocol="MESI_Two_Level",
         valid_hosts=(constants.host_x86_64_tag,),
         length=constants.long_tag,
@@ -215,7 +168,7 @@ if os.access("/dev/kvm", mode=os.R_OK | os.W_OK):
             "--ticks",
             "5000000000",
         ],
-        valid_isas=(constants.all_compiled_tag,),
+        valid_isas=(constants.x86_tag,),
         protocol="MESI_Two_Level",
         valid_hosts=(constants.host_x86_64_tag,),
         length=constants.long_tag,
@@ -237,7 +190,7 @@ if os.access("/dev/kvm", mode=os.R_OK | os.W_OK):
             "x86-gapbs-benchmarks.py",
         ),
         config_args=["--benchmark", "bfs", "--synthetic", "1", "--size", "1"],
-        valid_isas=(constants.all_compiled_tag,),
+        valid_isas=(constants.x86_tag,),
         protocol="MESI_Two_Level",
         valid_hosts=(constants.host_x86_64_tag,),
         length=constants.long_tag,
@@ -256,7 +209,7 @@ gem5_verify_config(
         "riscv-ubuntu-run.py",
     ),
     config_args=[],
-    valid_isas=(constants.all_compiled_tag,),
+    valid_isas=(constants.riscv_tag,),
     valid_hosts=constants.supported_hosts,
     length=constants.long_tag,
 )
@@ -269,13 +222,13 @@ gem5_verify_config(
         config.base_dir, "configs", "example", "lupv", "run_lupv.py"
     ),
     config_args=["timing", "1", "--max-ticks", "1000000000"],
-    valid_isas=(constants.all_compiled_tag,),
+    valid_isas=(constants.riscv_tag,),
     valid_hosts=constants.supported_hosts,
     length=constants.long_tag,
 )
 
 gem5_verify_config(
-    name="test-gem5-library-example-arm-ubuntu-run-test",
+    name="test-gem5-library-example-arm-ubuntu-boot-test",
     fixtures=(),
     verifiers=(),
     config=joinpath(
@@ -283,44 +236,10 @@ gem5_verify_config(
         "configs",
         "example",
         "gem5_library",
-        "arm-ubuntu-run.py",
+        "arm-ubuntu-boot-exit.py",
     ),
     config_args=[],
-    valid_isas=(constants.all_compiled_tag,),
+    valid_isas=(constants.arm_tag,),
     valid_hosts=constants.supported_hosts,
     length=constants.long_tag,
-)
-
-gem5_verify_config(
-    name="test-gem5-library-example-riscvmatched-hello",
-    fixtures=(),
-    verifiers=(),
-    config=joinpath(
-        config.base_dir,
-        "configs",
-        "example",
-        "gem5_library",
-        "riscvmatched-hello.py",
-    ),
-    config_args=[],
-    valid_isas=(constants.all_compiled_tag,),
-    valid_hosts=constants.supported_hosts,
-    length=constants.long_tag,
-)
-
-gem5_verify_config(
-    name="test-gem5-library-example-riscvmatched-fs",
-    fixtures=(),
-    verifiers=(),
-    config=joinpath(
-        config.base_dir,
-        "configs",
-        "example",
-        "gem5_library",
-        "riscvmatched-fs.py",
-    ),
-    config_args=["--to-init"],
-    valid_isas=(constants.all_compiled_tag,),
-    valid_hosts=constants.supported_hosts,
-    length=constants.very_long_tag,
 )

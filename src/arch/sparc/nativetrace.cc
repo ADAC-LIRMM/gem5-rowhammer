@@ -37,7 +37,7 @@
 namespace gem5
 {
 
-namespace trace {
+namespace Trace {
 
 static const char *intRegNames[SparcISA::int_reg::NumArchRegs] = {
     // Global registers
@@ -51,7 +51,7 @@ static const char *intRegNames[SparcISA::int_reg::NumArchRegs] = {
 };
 
 void
-SparcNativeTrace::check(NativeTraceRecord *record)
+Trace::SparcNativeTrace::check(NativeTraceRecord *record)
 {
     ThreadContext *tc = record->getThread();
 
@@ -89,5 +89,5 @@ SparcNativeTrace::check(NativeTraceRecord *record)
     checkReg("ccr", regVal, realRegVal);
 }
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5

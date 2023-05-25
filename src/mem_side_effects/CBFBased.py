@@ -4,7 +4,7 @@ from .Mitigation import Mitigation
 class CBFBased(Mitigation):
     type = 'CBFBased'
     cxx_header = "mem_side_effects/cbf_based.hh"
-    cxx_class = "CBFBased"
+    cxx_class = "gem5::memory::CBFBased"
 
     nb_counters = Param.Unsigned(1024, "number of counters")
     counter_limit = Param.Unsigned(1<<16, "limit value for one counter")

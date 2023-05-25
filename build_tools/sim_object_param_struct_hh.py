@@ -206,7 +206,7 @@ if sim_object._base:
 code("{")
 if not hasattr(sim_object, "abstract") or not sim_object.abstract:
     if "type" in sim_object.__dict__:
-        code("    ${{sim_object.cxx_type}} create() const;")
+        code("    ${{sim_object.cxx_type}} create();")
 
 code.indent()
 if sim_object == SimObject:

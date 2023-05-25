@@ -42,7 +42,7 @@ namespace gem5
 
 class ThreadContext;
 
-namespace trace {
+namespace Trace {
 
 class ExeTracerRecord : public InstRecord
 {
@@ -79,7 +79,7 @@ class ExeTracer : public InstTracer
     }
 };
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5
 
 #endif // __CPU_EXETRACE_HH__

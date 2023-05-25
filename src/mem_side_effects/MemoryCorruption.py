@@ -4,7 +4,7 @@ from m5.SimObject import SimObject
 class MemoryCorruption(SimObject):
     type = 'MemoryCorruption'
     cxx_header = "mem_side_effects/memory_corruption.hh"
-    cxx_class = "MemoryCorruption"
+    cxx_class = "gem5::memory::MemoryCorruption"
 
     hammer_threshold = Param.Unsigned(50000, "rowhammer flip threshold")
     rand_seed = Param.Unsigned(0, "memory corruption random seed")

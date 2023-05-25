@@ -173,7 +173,7 @@ class MinorDynInst : public RefCounted
     InstId id;
 
     /** Trace information for this instruction's execution */
-    trace::InstRecord *traceData = nullptr;
+    Trace::InstRecord *traceData = nullptr;
 
     /** The fetch address of this instruction */
     std::unique_ptr<PCStateBase> pc;

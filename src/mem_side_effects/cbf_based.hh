@@ -7,6 +7,11 @@
 #include <random>
 #include <unordered_map>
 
+namespace gem5
+{
+
+namespace memory
+{
 
 class CBFBased : public Mitigation {
 private:
@@ -32,17 +37,22 @@ private:
                              const std::vector<int>& addr_vec);
 
 public:
-    CBFBased(const CBFBasedParams &params);
+    typedef CBFBasedParams Params;
+    CBFBased(const Params &params);
 
     virtual void init(MemoryCorruption& mem_corrupt);
     void onACT(MemoryCorruption& mem_corrupt,
                const std::vector<int>& addr_vec);
-    void onREF(MemoryCorruption& mem_corrupt,
+    void onREFW(MemoryCorruption& mem_corrupt,
                const std::vector<int>& addr_vec);
 
-    Stats::Scalar maxCount;
+    statistics::Scalar maxCount;
 
     void regStats() override;
 };
+
+}
+
+}
 
 #endif // __CBF_BASED_HH__

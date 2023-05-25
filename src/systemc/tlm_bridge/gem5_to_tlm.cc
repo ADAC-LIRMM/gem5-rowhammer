@@ -112,8 +112,7 @@ std::vector<PacketToPayloadConversionStep> extraPacketToPayloadSteps;
  * gem5 packet to tlm payload. This can be useful when there exists a SystemC
  * extension that requires information in gem5 packet. For example, if a user
  * defined a SystemC extension the carries stream_id, the user may add a step
- * here to read stream_id out and set the extension properly. Steps should be
- * idempotent.
+ * here to read stream_id out and set the extension properly.
  */
 void
 addPacketToPayloadConversionStep(PacketToPayloadConversionStep step)
@@ -122,33 +121,13 @@ addPacketToPayloadConversionStep(PacketToPayloadConversionStep step)
 }
 
 /**
- * Convert a gem5 packet to TLM payload by copying all the relevant information
- * to new payload. If the transaction is initiated by TLM model, we would use
- * the original payload.
- * The return value is the payload pointer.
+ * Convert a gem5 packet to a TLM payload by copying all the relevant
+ * information to new tlm payload.
  */
 tlm::tlm_generic_payload *
 packet2payload(PacketPtr packet)
 {
-    tlm::tlm_generic_payload *trans = nullptr;
-    auto *tlmSenderState =
-        packet->findNextSenderState<Gem5SystemC::TlmSenderState>();
-
-    // If there is a SenderState, we can pipe through the original transaction.
-    // Otherwise, we generate a new transaction based on the packet.
-    if (tlmSenderState != nullptr) {
-        // Sync the address which could have changed.
-        trans = &tlmSenderState->trans;
-        trans->set_address(packet->getAddr());
-        trans->acquire();
-        // Apply all conversion steps necessary in this specific setup.
-        for (auto &step : extraPacketToPayloadSteps) {
-            step(packet, *trans);
-        }
-        return trans;
-    }
-
-    trans = mm.allocate();
+    tlm::tlm_generic_payload *trans = mm.allocate();
     trans->acquire();
 
     trans->set_address(packet->getAddr());
@@ -194,24 +173,6 @@ packet2payload(PacketPtr packet)
     return trans;
 }
 
-void
-setPacketResponse(PacketPtr pkt, tlm::tlm_generic_payload &trans)
-{
-    pkt->makeResponse();
-
-    auto resp = trans.get_response_status();
-    switch (resp) {
-      case tlm::TLM_OK_RESPONSE:
-        break;
-      case tlm::TLM_COMMAND_ERROR_RESPONSE:
-        pkt->setBadCommand();
-        break;
-      default:
-        pkt->setBadAddress();
-        break;
-    }
-}
-
 template <unsigned int BITWIDTH>
 void
 Gem5ToTlmBridge<BITWIDTH>::pec(
@@ -243,7 +204,7 @@ Gem5ToTlmBridge<BITWIDTH>::pec(
         // we make a response packet before sending it back to the initiator
         // side gem5 module.
         if (packet->needsResponse()) {
-            setPacketResponse(packet, trans);
+            packet->makeResponse();
         }
         if (packet->isResponse()) {
             need_retry = !bridgeResponsePort.sendTimingResp(packet);
@@ -314,7 +275,7 @@ Gem5ToTlmBridge<BITWIDTH>::recvAtomic(PacketPtr packet)
     }
 
     if (packet->needsResponse())
-        setPacketResponse(packet, *trans);
+        packet->makeResponse();
 
     trans->release();
 
@@ -346,7 +307,6 @@ Gem5ToTlmBridge<BITWIDTH>::recvAtomicBackdoor(
         backdoor = getBackdoor(*trans);
     }
 
-    // Always set success response in Backdoor case.
     if (packet->needsResponse())
         packet->makeResponse();
 
@@ -579,35 +539,35 @@ Gem5ToTlmBridge<BITWIDTH>::before_end_of_elaboration()
 } // namespace sc_gem5
 
 sc_gem5::Gem5ToTlmBridge<32> *
-gem5::Gem5ToTlmBridge32Params::create() const
+gem5::Gem5ToTlmBridge32Params::create()
 {
     return new sc_gem5::Gem5ToTlmBridge<32>(
             *this, sc_core::sc_module_name(name.c_str()));
 }
 
 sc_gem5::Gem5ToTlmBridge<64> *
-gem5::Gem5ToTlmBridge64Params::create() const
+gem5::Gem5ToTlmBridge64Params::create()
 {
     return new sc_gem5::Gem5ToTlmBridge<64>(
             *this, sc_core::sc_module_name(name.c_str()));
 }
 
 sc_gem5::Gem5ToTlmBridge<128> *
-gem5::Gem5ToTlmBridge128Params::create() const
+gem5::Gem5ToTlmBridge128Params::create()
 {
     return new sc_gem5::Gem5ToTlmBridge<128>(
             *this, sc_core::sc_module_name(name.c_str()));
 }
 
 sc_gem5::Gem5ToTlmBridge<256> *
-gem5::Gem5ToTlmBridge256Params::create() const
+gem5::Gem5ToTlmBridge256Params::create()
 {
     return new sc_gem5::Gem5ToTlmBridge<256>(
             *this, sc_core::sc_module_name(name.c_str()));
 }
 
 sc_gem5::Gem5ToTlmBridge<512> *
-gem5::Gem5ToTlmBridge512Params::create() const
+gem5::Gem5ToTlmBridge512Params::create()
 {
     return new sc_gem5::Gem5ToTlmBridge<512>(
             *this, sc_core::sc_module_name(name.c_str()));

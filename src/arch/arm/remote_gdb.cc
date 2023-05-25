@@ -391,4 +391,17 @@ RemoteGDB::checkBpKind(size_t kind)
     }
 }
 
+int RemoteGDB::convSignumForArch(int signum){
+    switch (signum){
+        case SIGSTOP:
+            return 17;
+        case SIGTRAP:
+            return 5;
+        case SIGILL:
+            return 4;
+        default:
+           return signum;
+    }
+}
+
 } // namespace gem5

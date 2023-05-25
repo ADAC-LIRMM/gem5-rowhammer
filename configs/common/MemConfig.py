@@ -46,14 +46,8 @@ def extract_dram_layout(file_path) :
                 array.extend(list(map(int, line.split(',;'))))
     return array
 
-<<<<<<< HEAD
-def create_mem_intf(intf, r, i, nbr_mem_ctrls, intlv_bits, intlv_size,
+def create_mem_intf(intf, r, i, intlv_bits, intlv_size,
                     xor_low_bit, options):
-
-=======
-
-def create_mem_intf(intf, r, i, intlv_bits, intlv_size, xor_low_bit):
->>>>>>> 5fa484e2e02604ad3a5bf01f35ad1f97ca6d17b8
     """
     Helper function for creating a single memoy controller from the given
     options.  This function is invoked multiple times in config_mem function
@@ -268,16 +262,17 @@ def config_mem(options, system):
         range_iter += 1
 
         for i in range(nbr_mem_ctrls):
-            if opt_mem_type and (not opt_nvm_type or range_iter % 2 != 0):
+            if(opt_mem_type=="Ramulator" and
+            (not opt_nvm_type or range_iter % 2 != 0)):
+                ctrl_intf= create_mem_intf(intf, r, i,
+                intlv_bits, intlv_size, opt_xor_low_bit,options)
+                mem_ctrls.append(ctrl_intf)
+            elif opt_mem_type and (not opt_nvm_type or range_iter % 2 != 0):
                 # Create the DRAM interface
-<<<<<<< HEAD
-                dram_intf = create_mem_intf(intf, r, i, nbr_mem_ctrls,
-                    intlv_bits, intlv_size, opt_xor_low_bit, options)
-=======
-                dram_intf = create_mem_intf(
-                    intf, r, i, intlv_bits, intlv_size, opt_xor_low_bit
-                )
->>>>>>> 5fa484e2e02604ad3a5bf01f35ad1f97ca6d17b8
+                dram_intf = create_mem_intf(intf, r, i,
+                    intlv_bits, intlv_size, opt_xor_low_bit,options)
+
+
 
                 # Set the number of ranks based on the command-line
                 # options if it was explicitly set
@@ -299,7 +294,6 @@ def config_mem(options, system):
                     )
 
                 # Create the controller that will drive the interface
-<<<<<<< HEAD
                 if opt_mem_type == "HMC_2500_1x32":
                     # The static latency of the vault controllers is estimated
                     # to be smaller than a full DRAM channel controller
@@ -321,16 +315,12 @@ def config_mem(options, system):
                 elif opt_mem_type != "SimpleMemory" and \
                     opt_mem_type != "Ramulator":
                     mem_ctrl.dram = dram_intf
-=======
-                mem_ctrl = dram_intf.controller()
->>>>>>> 5fa484e2e02604ad3a5bf01f35ad1f97ca6d17b8
 
                 mem_ctrls.append(mem_ctrl)
 
             elif opt_nvm_type and (not opt_mem_type or range_iter % 2 == 0):
-                nvm_intf = create_mem_intf(
-                    n_intf, r, i, intlv_bits, intlv_size, opt_xor_low_bit
-                )
+                nvm_intf = create_mem_intf(n_intf, r, i,
+                    intlv_bits, intlv_size, opt_xor_low_bit,options)
 
                 # Set the number of ranks based on the command-line
                 # options if it was explicitly set

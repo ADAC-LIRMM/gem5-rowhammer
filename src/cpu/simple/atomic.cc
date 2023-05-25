@@ -390,6 +390,8 @@ AtomicSimpleCPU::readMem(Addr addr, uint8_t *data, unsigned size,
         if (predicate) {
             fault = thread->mmu->translateAtomic(req, thread->getTC(),
                                                  BaseMMU::Read);
+            if(fault == NoFault)
+                checkMmuWatchList(req,BaseMMU::Read);
         }
 
         // Now do the access.
@@ -474,9 +476,12 @@ AtomicSimpleCPU::writeMem(uint8_t *data, unsigned size, Addr addr,
                                           byte_enable, frag_size, size_left);
 
         // translate to physical address
-        if (predicate)
+        if (predicate){
             fault = thread->mmu->translateAtomic(req, thread->getTC(),
                                                  BaseMMU::Write);
+            if(fault == NoFault)
+                checkMmuWatchList(req,BaseMMU::Write);
+        }
 
         // Now do the access.
         if (predicate && fault == NoFault) {
@@ -581,7 +586,8 @@ AtomicSimpleCPU::amoMem(Addr addr, uint8_t* data, unsigned size,
     // translate to physical address
     Fault fault = thread->mmu->translateAtomic(
         req, thread->getTC(), BaseMMU::Write);
-
+    if(fault == NoFault)
+        checkMmuWatchList(req,BaseMMU::Write);
     // Now do the access.
     if (fault == NoFault && !req->getFlags().isSet(Request::NO_ACCESS)) {
         // We treat AMO accesses as Write accesses with SwapReq command
@@ -639,7 +645,8 @@ AtomicSimpleCPU::tick()
 
         if (!curStaticInst || !curStaticInst->isDelayedCommit()) {
             checkForInterrupts();
-            checkPcEventQueue();
+            //if(!curStaticInst->isMicroop() || curStaticInst->isFirstMicroop())
+                checkPcEventQueue();
         }
 
         // We must have just got suspended by a PC event

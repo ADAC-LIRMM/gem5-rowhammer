@@ -36,9 +36,6 @@ class Workload(SimObject):
     abstract = True
 
     wait_for_remote_gdb = Param.Bool(False, "Wait for a remote GDB connection")
-    remote_gdb_port = Param.Int(
-        7000, "Default port number used for remote GDB connection"
-    )
 
     @cxxMethod
     def sendToGdb(self, message):
@@ -46,6 +43,36 @@ class Workload(SimObject):
         Args:
             message (str): message to send
         """
+
+        pass
+
+    @cxxMethod
+    def triggerGDB(self, signal, ctx_id, stopReason, skipped_inst):
+        """trigger a GDB trap event with the indicated parameters
+        Args:
+            signal (int): signal code (SIGKILL,SIGTRAP, ...)
+            ctx_id (int): context id (generally equivalent to thread id)
+            stopReason (str): "stop reason (see GDB remote protocol documentation)"
+            skipped_inst (int): number of instruction to skip
+        """
+        pass
+
+    @cxxMethod
+    def translateAddr(self, thread_id, addr):
+        pass
+
+    @cxxMethod
+    def setPhysicalWatch(self, val):
+        """Set if the address in Watch point have to be interpreted as a physical address
+
+        Args:
+            val (bool): Are Watch point physical on/off
+        """
+        pass
+
+    @cxxMethod
+    def getGDBStopReason(self):
+        """return the pending StopReason in GDB"""
         pass
 
 

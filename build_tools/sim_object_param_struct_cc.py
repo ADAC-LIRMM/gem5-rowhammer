@@ -234,7 +234,7 @@ namespace
 class Dummy${sim_object}ParamsClass
 {
   public:
-    ${{sim_object.cxx_class}} *create() const;
+    ${{sim_object.cxx_class}} *create();
 };
 
 template <class CxxClass, class Enable=void>
@@ -247,12 +247,12 @@ class Dummy${sim_object}Shunt;
  */
 template <class CxxClass>
 class Dummy${sim_object}Shunt<CxxClass, std::enable_if_t<
-    std::is_constructible_v<CxxClass, const ${sim_object}Params &>>>
+    std::is_constructible_v<CxxClass, ${sim_object}Params &>>>
 {
   public:
     using Params = ${sim_object}Params;
     static ${{sim_object.cxx_class}} *
-    create(const Params &p)
+    create(Params &p)
     {
         return new CxxClass(p);
     }
@@ -265,12 +265,12 @@ class Dummy${sim_object}Shunt<CxxClass, std::enable_if_t<
  */
 template <class CxxClass>
 class Dummy${sim_object}Shunt<CxxClass, std::enable_if_t<
-    !std::is_constructible_v<CxxClass, const ${sim_object}Params &>>>
+    !std::is_constructible_v<CxxClass, ${sim_object}Params &>>>
 {
   public:
     using Params = Dummy${sim_object}ParamsClass;
     static ${{sim_object.cxx_class}} *
-    create(const Params &p)
+    create(Params &p)
     {
         return nullptr;
     }
@@ -285,7 +285,7 @@ class Dummy${sim_object}Shunt<CxxClass, std::enable_if_t<
  * one is optional which will override this weak version.
  */
 [[maybe_unused]] ${{sim_object.cxx_class}} *
-Dummy${sim_object}Shunt<${{sim_object.cxx_class}}>::Params::create() const
+Dummy${sim_object}Shunt<${{sim_object.cxx_class}}>::Params::create()
 {
     return Dummy${sim_object}Shunt<${{sim_object.cxx_class}}>::create(*this);
 }

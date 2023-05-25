@@ -39,6 +39,6 @@ from arm_generic import *
 root = LinuxArmFSSystemUniprocessor(
     mem_mode="timing",
     mem_class=DDR3_1600_8x8,
-    cpu_class=ArmTimingSimpleCPU,
+    cpu_class=TimingSimpleCPU,
     use_ruby=True,
 ).create_root()

@@ -81,7 +81,6 @@ class NetworkLink : public ClockedObject, public Consumer
     inline flit* peekLink() { return linkBuffer.peekTopFlit(); }
     inline flit* consumeLink() { return linkBuffer.getTopFlit(); }
 
-    bool functionalRead(Packet *pkt, WriteMask &mask);
     uint32_t functionalWrite(Packet *);
     void resetStats();
 

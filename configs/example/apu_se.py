@@ -258,24 +258,6 @@ parser.add_argument(
     help="Number of coalescer tokens per CU",
 )
 parser.add_argument(
-    "--vrf_lm_bus_latency",
-    type=int,
-    default=1,
-    help="Latency while accessing shared memory",
-)
-parser.add_argument(
-    "--mem-req-latency",
-    type=int,
-    default=50,
-    help="Latency for requests from the cu to ruby.",
-)
-parser.add_argument(
-    "--mem-resp-latency",
-    type=int,
-    default=50,
-    help="Latency for responses from ruby to the cu.",
-)
-parser.add_argument(
     "--TLB-prefetch", type=int, help="prefetch depth for" "TLBs"
 )
 parser.add_argument(
@@ -460,9 +442,6 @@ for i in range(n_cu):
             localMemBarrier=args.LocalMemBarrier,
             countPages=args.countPages,
             max_cu_tokens=args.max_cu_tokens,
-            vrf_lm_bus_latency=args.vrf_lm_bus_latency,
-            mem_req_latency=args.mem_req_latency,
-            mem_resp_latency=args.mem_resp_latency,
             localDataStore=LdsState(
                 banks=args.numLdsBanks,
                 bankConflictPenalty=args.ldsBankConflictPenalty,
@@ -739,11 +718,6 @@ if fast_forward:
     switch_cpu_list = [
         (cpu_list[i], future_cpu_list[i]) for i in range(args.num_cpus)
     ]
-
-# Other CPU strings cause bad addresses in ROCm. Revert back to M5 Simulator.
-for (i, cpu) in enumerate(cpu_list):
-    for j in range(len(cpu)):
-        cpu.isa[j].vendor_string = "M5 Simulator"
 
 # Full list of processing cores in the system.
 cpu_list = cpu_list + [shader] + cp_list

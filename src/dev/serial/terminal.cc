@@ -115,7 +115,7 @@ Terminal::DataEvent::process(int revent)
 /*
  * Terminal code
  */
-Terminal::Terminal(const Params &p)
+Terminal::Terminal( Params &p)
     : SerialDevice(p), listenEvent(NULL), dataEvent(NULL),
       number(p.number), data_fd(-1), txbuf(16384), rxbuf(16384),
       outfile(terminalDump(p))
@@ -164,7 +164,7 @@ Terminal::terminalDump(const TerminalParams &p)
 //
 
 void
-Terminal::listen(int port)
+Terminal::listen(uint16_t& port)
 {
     if (ListenSocket::allDisabled()) {
         warn_once("Sockets disabled, not accepting terminal connections");

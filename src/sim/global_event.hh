@@ -103,8 +103,8 @@ class BaseGlobalEvent : public EventBase
             EventQueue::ScopedRelease release(curEventQueue());
             return _globalEvent->barrier.wait();
         }
-
       public:
+        const std::string name() const override{return "barrier event";}
         virtual BaseGlobalEvent *globalEvent() { return _globalEvent; }
     };
 

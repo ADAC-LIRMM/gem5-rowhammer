@@ -38,8 +38,7 @@ command_ccs = [
     'readfile.cc',
     'resetstats.cc',
     'writefile.cc',
-    'workbegin.cc',
-    'workend.cc'
+    'm5env.cc'
 ]
 
 command_objs = list(map(env.StaticObject, command_ccs))

@@ -27,11 +27,11 @@
 from abc import ABC
 from typing import Any, Iterable, Optional, Union, List
 
-from .abstract_stat import AbstractStat
+from .jsonserializable import JsonSerializable
 from .storagetype import StorageType
 
 
-class Statistic(ABC, AbstractStat):
+class Statistic(ABC, JsonSerializable):
     """
     The abstract base class for all Python statistics.
     """
@@ -55,9 +55,6 @@ class Statistic(ABC, AbstractStat):
         self.unit = unit
         self.description = description
         self.datatype = datatype
-
-    def __repr__(self):
-        return str(self.value)
 
 
 class Scalar(Statistic):

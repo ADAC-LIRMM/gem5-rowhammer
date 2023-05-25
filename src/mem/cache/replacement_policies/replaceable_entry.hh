@@ -118,7 +118,7 @@ class ReplaceableEntry
     virtual std::string
     print() const
     {
-        return csprintf("set: %#x way: %#x", getSet(), getWay());
+        return csprintf("set: 0x%x way: 0x%x", getSet(), getWay());
     }
 };
 

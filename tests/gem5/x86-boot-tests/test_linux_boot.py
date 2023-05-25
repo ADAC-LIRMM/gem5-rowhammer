@@ -64,13 +64,13 @@ def test_boot(
 
     if mem_system == "mesi_two_level":
         protocol_to_use = None
-        isa_to_use = constants.all_compiled_tag
+        isa_to_use = constants.x86_tag
     elif mem_system == "mi_example":
         protocol_to_use = "MI_example"
         isa_to_use = constants.x86_tag
     else:
         protocol_to_use = None
-        isa_to_use = constants.all_compiled_tag
+        isa_to_use = constants.vega_x86_tag
 
     gem5_verify_config(
         name=name,
@@ -150,13 +150,39 @@ test_boot(
 
 #### The long (Nightly) tests ####
 
+test_boot(
+    cpu="atomic",
+    num_cpus=1,
+    mem_system="classic",
+    memory_class="SingleChannelHBM",
+    boot_type="init",
+    length=constants.long_tag,
+)
 
 test_boot(
     cpu="timing",
     num_cpus=1,
     mem_system="mesi_two_level",
     memory_class="DualChannelDDR3_1600",
-    boot_type="systemd",
+    boot_type="init",
+    length=constants.long_tag,
+)
+
+test_boot(
+    cpu="timing",
+    num_cpus=1,
+    mem_system="mi_example",
+    memory_class="DualChannelDDR3_2133",
+    boot_type="init",
+    length=constants.long_tag,
+)
+
+test_boot(
+    cpu="timing",
+    num_cpus=4,
+    mem_system="classic",
+    memory_class="DualChannelDDR3_2133",
+    boot_type="init",
     length=constants.long_tag,
 )
 
@@ -183,6 +209,14 @@ test_boot(
 #    length=constants.long_tag,
 # )
 
+test_boot(
+    cpu="atomic",
+    num_cpus=4,
+    mem_system="classic",
+    memory_class="HBM2Stack",
+    boot_type="systemd",
+    length=constants.long_tag,
+)
 
 #### The very-long (Weekly) tests ####
 

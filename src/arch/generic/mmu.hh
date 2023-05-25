@@ -53,7 +53,7 @@ class BaseTLB;
 class BaseMMU : public SimObject
 {
   public:
-    enum Mode { Read, Write, Execute };
+    enum Mode { None,Read,Write, Read_Write, Execute,Execute_Read,Execute_Write,Execute_Read_Write };
 
     class Translation
     {

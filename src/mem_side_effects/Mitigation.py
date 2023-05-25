@@ -5,4 +5,4 @@ class Mitigation(SimObject):
     type = 'Mitigation'
     abstract = True
     cxx_header = "mem_side_effects/mitigation.hh"
-    cxx_class = "Mitigation"
+    cxx_class = "gem5::memory::Mitigation"

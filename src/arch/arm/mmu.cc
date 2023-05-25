@@ -51,6 +51,7 @@
 #include "sim/pseudo_inst.hh"
 #include "sim/process.hh"
 
+
 namespace gem5
 {
 
@@ -795,6 +796,7 @@ MMU::translateMmuOff(ThreadContext *tc, const RequestPtr &req, Mode mode,
     bool is_fetch  = (mode == Execute);
     bool is_atomic = req->isAtomic();
     req->setPaddr(vaddr);
+    req->_mmu_translation_info="NoMMU;";
     // When the MMU is off the security attribute corresponds to the
     // security state of the processor
     if (state.isSecure)
@@ -926,6 +928,7 @@ MMU::translateMmuOn(ThreadContext* tc, const RequestPtr &req, Mode mode,
     }
 
     if (fault == NoFault) {
+        req->_mmu_translation_info=csprintf("VA=%lx;",req->getVaddr());
         // Don't try to finalize a physical address unless the
         // translation has completed (i.e., there is a table entry).
         return te ? finalizePhysical(req, tc, mode) : NoFault;
@@ -1316,7 +1319,7 @@ MMU::CachedState::updateMiscReg(ThreadContext *tc,
                                  !isSecure));
         ttbcr  = tc->readMiscReg(snsBankedIndex(MISCREG_TTBCR, tc,
                                  !isSecure));
-        scr    = tc->readMiscReg(MISCREG_SCR_EL3);
+        scr    = tc->readMiscReg(MISCREG_SCR);
         isPriv = cpsr.mode != MODE_USER;
         if (longDescFormatInUse(tc)) {
             uint64_t ttbr_asid = tc->readMiscReg(
@@ -1335,7 +1338,7 @@ MMU::CachedState::updateMiscReg(ThreadContext *tc,
                                !isSecure));
         dacr = tc->readMiscReg(snsBankedIndex(MISCREG_DACR, tc,
                                !isSecure));
-        hcr  = tc->readMiscReg(MISCREG_HCR_EL2);
+        hcr  = tc->readMiscReg(MISCREG_HCR);
 
         if (mmu->release()->has(ArmExtension::VIRTUALIZATION)) {
             vmid   = bits(tc->readMiscReg(MISCREG_VTTBR), 55, 48);
@@ -1579,6 +1582,10 @@ MMU::takeOverFrom(BaseMMU *old_mmu)
 
     s1State = ommu->s1State;
     s2State = ommu->s2State;
+    //dtbWalker->getTableWalkerPort().takeOverFrom(&ommu->dtbWalker->getTableWalkerPort());
+    //itbWalker->getTableWalkerPort().takeOverFrom(&ommu->itbWalker->getTableWalkerPort());
+    //dtbStage2Walker->getTableWalkerPort().takeOverFrom(&ommu->dtbStage2Walker->getTableWalkerPort());
+    //itbStage2Walker->getTableWalkerPort().takeOverFrom(&ommu->itbStage2Walker->getTableWalkerPort());
 }
 
 void

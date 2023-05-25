@@ -1,15 +1,15 @@
 Import ('*')
 
-SimObject('MemoryCorruption.py')
+SimObject('MemoryCorruption.py', sim_objects=['MemoryCorruption'])
 Source('memory_corruption.cc')
 
-SimObject('Mitigation.py')
+SimObject('Mitigation.py', sim_objects=['Mitigation'])
 Source('mitigation.cc')
 
-SimObject('PARA.py')
+SimObject('PARA.py', sim_objects=['PARA'])
 Source('para.cc')
 
-SimObject('CBFBased.py')
+SimObject('CBFBased.py', sim_objects=['CBFBased'])
 Source('cbf_based.cc')
 
 DebugFlag('MemCorrupt')

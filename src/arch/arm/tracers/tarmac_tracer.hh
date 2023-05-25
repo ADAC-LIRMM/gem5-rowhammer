@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, 2022 Arm Limited
+ * Copyright (c) 2017-2018 ARM Limited
  * All rights reserved
  *
  * The license below extends only to copyright in the software and shall
@@ -54,9 +54,8 @@ namespace gem5
 {
 
 class ThreadContext;
-class OutputStream;
 
-namespace trace {
+namespace Trace {
 
 /**
  * This object type is encapsulating the informations needed by
@@ -105,15 +104,11 @@ class TarmacTracer : public InstTracer
             const StaticInstPtr staticInst, const PCStateBase &pc,
             const StaticInstPtr macroStaticInst=nullptr) override;
 
-    std::ostream& output();
-
   protected:
     typedef std::unique_ptr<Printable> PEntryPtr;
     typedef TarmacTracerRecord::InstPtr InstPtr;
     typedef TarmacTracerRecord::MemPtr MemPtr;
     typedef TarmacTracerRecord::RegPtr RegPtr;
-
-    OutputStream *outstream;
 
     /**
      * startTick and endTick allow to trace a specific window of ticks
@@ -134,7 +129,7 @@ class TarmacTracer : public InstTracer
     std::vector<RegPtr> regQueue;
 };
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5
 
 #endif // __ARCH_ARM_TRACERS_TARMAC_TRACER_HH__

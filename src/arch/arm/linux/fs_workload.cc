@@ -336,7 +336,7 @@ DumpStats64::getTaskDetails(ThreadContext *tc, uint32_t &pid,
 /** This function is called whenever the the kernel function
  *  "__switch_to" is called to change running tasks.
  */
-void
+bool
 DumpStats::process(ThreadContext *tc)
 {
     uint32_t pid = 0;
@@ -376,6 +376,7 @@ DumpStats::process(ThreadContext *tc)
 
     // Dump and reset statistics
     statistics::schedStatEvent(true, true, curTick(), 0);
+    return false;
 }
 
 } // namespace ArmISA

@@ -71,6 +71,9 @@ class AbstractMemory(ClockedObject):
 
     # Image file to load into this memory as its initial contents. This is
     # particularly useful for ROMs.
-    image_file = Param.String(
-        "", "Image to load into memory as its initial contents"
-    )
+    image_file = Param.String('',
+            "Image to load into memory as its initial contents")
+
+    secure = Param.Bool("False","Memory Security : block unsecure transaction")
+    read_only = Param.Bool("False","Read ONLY ignore write transaction")
+

@@ -58,6 +58,7 @@ namespace memory
 
 AbstractMemory::AbstractMemory(const Params &p) :
     ClockedObject(p), range(p.range), pmemAddr(NULL),
+    secure(p.secure),read_only(p.read_only),
     backdoor(params().range, nullptr,
              (MemBackdoor::Flags)(MemBackdoor::Readable |
                                   MemBackdoor::Writeable)),
@@ -391,6 +392,12 @@ AbstractMemory::access(PacketPtr pkt)
     }
 
     assert(pkt->getAddrRange().isSubset(range));
+    //discarding now unsecure access
+    if(secure && !pkt->isSecure() && !pkt->req->getFlags().isSet(Request::GDB_ACCESS)){
+        pkt->makeResponse();
+        warn("Unsecure access refused. An exception should be raised but how\n");
+        return;
+    }
 
     uint8_t *host_addr = toHostAddr(pkt->getAddr());
 
@@ -457,16 +464,21 @@ AbstractMemory::access(PacketPtr pkt)
 
         // no need to do anything
     } else if (pkt->isWrite()) {
-        if (writeOK(pkt)) {
-            if (pmemAddr) {
-                pkt->writeData(host_addr);
-                DPRINTF(MemoryAccess, "%s write due to %s\n",
-                        __func__, pkt->print());
+        if(read_only) warn("writing to read_only memory => authorized if simulation has not started cylce=%s\n",curCycle());
+        if(read_only && curCycle () >0){
+            ;;
+        }else{
+            if (writeOK(pkt)) {
+                if (pmemAddr) {
+                    pkt->writeData(host_addr);
+                    DPRINTF(MemoryAccess, "%s write due to %s\n",
+                            __func__, pkt->print());
+                }
+                assert(!pkt->req->isInstFetch());
+                TRACE_PACKET("Write");
+                stats.numWrites[pkt->req->requestorId()]++;
+                stats.bytesWritten[pkt->req->requestorId()] += pkt->getSize();
             }
-            assert(!pkt->req->isInstFetch());
-            TRACE_PACKET("Write");
-            stats.numWrites[pkt->req->requestorId()]++;
-            stats.bytesWritten[pkt->req->requestorId()] += pkt->getSize();
         }
     } else {
         panic("Unexpected packet %s", pkt->print());
@@ -484,18 +496,27 @@ AbstractMemory::functionalAccess(PacketPtr pkt)
 
     uint8_t *host_addr = toHostAddr(pkt->getAddr());
 
-    if (pkt->isRead()) {
+    if(secure && !pkt->isSecure() && !pkt->req->getFlags().isSet(Request::GDB_ACCESS)){
+        pkt->makeResponse();
+        warn("Unsecure access refused. An exception should be raised but how\n");
+    }else if (pkt->isRead()) {
         if (pmemAddr) {
             pkt->setData(host_addr);
         }
         TRACE_PACKET("Read");
         pkt->makeResponse();
     } else if (pkt->isWrite()) {
-        if (pmemAddr) {
-            pkt->writeData(host_addr);
+        if(read_only)
+            warn_once("writing to read_only memory => authorized only if simulation has not started, current cylce=%s\n",curCycle());
+        if(read_only && curCycle () >0){
+            warn("writing to read_only memory => current cylce=%s\n",curCycle());
+        }else{
+            if (pmemAddr) {
+                pkt->writeData(host_addr);
+            }
+            TRACE_PACKET("Write");
+            pkt->makeResponse();
         }
-        TRACE_PACKET("Write");
-        pkt->makeResponse();
     } else if (pkt->isPrint()) {
         Packet::PrintReqState *prs =
             dynamic_cast<Packet::PrintReqState*>(pkt->senderState);

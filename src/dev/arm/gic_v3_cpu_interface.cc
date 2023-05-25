@@ -55,19 +55,15 @@ using namespace ArmISA;
 const uint8_t Gicv3CPUInterface::GIC_MIN_BPR;
 const uint8_t Gicv3CPUInterface::GIC_MIN_BPR_NS;
 
-Gicv3CPUInterface::Gicv3CPUInterface(Gicv3 * gic, ThreadContext *_tc)
+Gicv3CPUInterface::Gicv3CPUInterface(Gicv3 * gic, uint32_t cpu_id)
     : BaseISADevice(),
       gic(gic),
       redistributor(nullptr),
       distributor(nullptr),
-      tc(_tc),
-      maintenanceInterrupt(gic->params().maint_int->get(tc)),
-      cpuId(tc->contextId())
+      cpuId(cpu_id)
 {
     hppi.prio = 0xff;
     hppi.intid = Gicv3::INTID_SPURIOUS;
-
-    setISA(static_cast<ISA*>(tc->getIsaPtr()));
 }
 
 void
@@ -85,9 +81,8 @@ Gicv3CPUInterface::resetHppi(uint32_t intid)
 }
 
 void
-Gicv3CPUInterface::setThreadContext(ThreadContext *_tc)
+Gicv3CPUInterface::setThreadContext(ThreadContext *tc)
 {
-    tc = _tc;
     maintenanceInterrupt = gic->params().maint_int->get(tc);
     fatal_if(maintenanceInterrupt->num() >= redistributor->irqPending.size(),
         "Invalid maintenance interrupt number\n");
@@ -96,7 +91,7 @@ Gicv3CPUInterface::setThreadContext(ThreadContext *_tc)
 bool
 Gicv3CPUInterface::getHCREL2FMO() const
 {
-    HCR hcr = tc->readMiscRegNoEffect(MISCREG_HCR_EL2);
+    HCR hcr = isa->readMiscRegNoEffect(MISCREG_HCR_EL2);
 
     if (hcr.tge && hcr.e2h) {
         return false;
@@ -110,7 +105,7 @@ Gicv3CPUInterface::getHCREL2FMO() const
 bool
 Gicv3CPUInterface::getHCREL2IMO() const
 {
-    HCR hcr = tc->readMiscRegNoEffect(MISCREG_HCR_EL2);
+    HCR hcr = isa->readMiscRegNoEffect(MISCREG_HCR_EL2);
 
     if (hcr.tge && hcr.e2h) {
         return false;
@@ -235,7 +230,7 @@ Gicv3CPUInterface::readMiscReg(int misc_reg)
           uint8_t rprio = highestActivePriority();
 
           if (haveEL(EL3) && !inSecureState() &&
-              (tc->readMiscRegNoEffect(MISCREG_SCR_EL3) & (1U << 2))) {
+              (isa->readMiscRegNoEffect(MISCREG_SCR_EL3) & (1U << 2))) {
               // Spec section 4.8.1
               // For Non-secure access to ICC_RPR_EL1 when SCR_EL3.FIQ == 1
               if ((rprio & 0x80) == 0) {
@@ -371,7 +366,7 @@ Gicv3CPUInterface::readMiscReg(int misc_reg)
         }
 
         if (haveEL(EL3) && !inSecureState() &&
-            (tc->readMiscRegNoEffect(MISCREG_SCR_EL3) & (1U << 2))) {
+            (isa->readMiscRegNoEffect(MISCREG_SCR_EL3) & (1U << 2))) {
             // Spec section 4.8.1
             // For Non-secure access to ICC_PMR_EL1 when SCR_EL3.FIQ == 1:
             if ((value & 0x80) == 0) {
@@ -973,7 +968,7 @@ Gicv3CPUInterface::setMiscReg(int misc_reg, RegVal val)
           bool irq_is_grp0 = group == Gicv3::G0S;
           bool single_sec_state = distributor->DS;
           bool irq_is_secure = !single_sec_state && (group != Gicv3::G1NS);
-          SCR scr_el3 = tc->readMiscRegNoEffect(MISCREG_SCR_EL3);
+          SCR scr_el3 = isa->readMiscRegNoEffect(MISCREG_SCR_EL3);
           bool route_fiq_to_el3 = scr_el3.fiq;
           bool route_irq_to_el3 = scr_el3.irq;
           bool route_fiq_to_el2 = hcr_fmo;
@@ -1295,7 +1290,7 @@ Gicv3CPUInterface::setMiscReg(int misc_reg, RegVal val)
           }
 
           val &= 0xff;
-          SCR scr_el3 = tc->readMiscRegNoEffect(MISCREG_SCR_EL3);
+          SCR scr_el3 = isa->readMiscRegNoEffect(MISCREG_SCR_EL3);
 
           if (haveEL(EL3) && !inSecureState() && (scr_el3.fiq)) {
               // Spec section 4.8.1
@@ -2344,13 +2339,13 @@ Gicv3CPUInterface::groupEnabled(Gicv3::GroupId group) const
 bool
 Gicv3CPUInterface::inSecureState() const
 {
-    return ArmISA::isSecure(tc);
+    return isa->inSecureState();
 }
 
 ExceptionLevel
 Gicv3CPUInterface::currEL() const
 {
-    return ArmISA::currEL(tc);
+    return isa->currEL();
 }
 
 bool
@@ -2376,19 +2371,32 @@ Gicv3CPUInterface::haveEL(ExceptionLevel el) const
 bool
 Gicv3CPUInterface::isSecureBelowEL3() const
 {
-    return ArmISA::isSecureBelowEL3(tc);
+    SCR scr = isa->readMiscRegNoEffect(MISCREG_SCR_EL3);
+    return haveEL(EL3) && scr.ns == 0;
 }
 
 bool
 Gicv3CPUInterface::isAA64() const
 {
-    return ArmISA::inAArch64(tc);
+    CPSR cpsr = isa->readMiscRegNoEffect(MISCREG_CPSR);
+    return opModeIs64((OperatingMode)(uint8_t) cpsr.mode);
 }
 
 bool
 Gicv3CPUInterface::isEL3OrMon() const
 {
-    return currEL() == EL3;
+    if (haveEL(EL3)) {
+        CPSR cpsr = isa->readMiscRegNoEffect(MISCREG_CPSR);
+        bool is_64 = opModeIs64((OperatingMode)(uint8_t) cpsr.mode);
+
+        if (is_64 && (cpsr.el == EL3)) {
+            return true;
+        } else if (!is_64 && (cpsr.mode == MODE_MON)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Computes ICH_EISR_EL2

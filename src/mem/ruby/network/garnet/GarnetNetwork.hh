@@ -55,7 +55,6 @@ namespace garnet
 class NetworkInterface;
 class Router;
 class NetworkLink;
-class NetworkBridge;
 class CreditLink;
 
 class GarnetNetwork : public Network
@@ -106,7 +105,6 @@ class GarnetNetwork : public Network
                           PortDirection src_outport_dirn,
                           PortDirection dest_inport_dirn);
 
-    bool functionalRead(Packet *pkt, WriteMask &mask);
     //! Function for performing a functional write. The return value
     //! indicates the number of messages that were written.
     uint32_t functionalWrite(Packet *pkt);
@@ -210,7 +208,6 @@ class GarnetNetwork : public Network
     std::vector<VNET_type > m_vnet_type;
     std::vector<Router *> m_routers;   // All Routers in Network
     std::vector<NetworkLink *> m_networklinks; // All flit links in the network
-    std::vector<NetworkBridge *> m_networkbridges; // All network bridges
     std::vector<CreditLink *> m_creditlinks; // All credit links in the network
     std::vector<NetworkInterface *> m_nis;   // All NI's in Network
     int m_next_packet_id; // static vairable for packet id allocation

@@ -5,6 +5,12 @@
 #include "sim/sim_object.hh"
 #include "base/statistics.hh"
 
+namespace gem5
+{
+
+namespace memory
+{
+
 class Mitigation : public SimObject
 {
 protected:
@@ -23,11 +29,17 @@ public:
 
     virtual void onACT(MemoryCorruption& mem_corrupt,
                        const std::vector<int>& addr_vec) { }
-    virtual void onREF(MemoryCorruption& mem_corrupt,
+    virtual void onREFI(MemoryCorruption& mem_corrupt,
+                       const std::vector<int>& addr_vec) { }
+    virtual void onREFW(MemoryCorruption& mem_corrupt,
                        const std::vector<int>& addr_vec) { }
 
-    Stats::Scalar additionalRefreshesCount;
+    statistics::Scalar additionalRefreshesCount;
     virtual void regStats() override;
 };
+
+}
+
+}
 
 #endif // __MITIGATION_HH__

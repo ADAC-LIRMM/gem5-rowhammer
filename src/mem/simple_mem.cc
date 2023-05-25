@@ -53,8 +53,8 @@ namespace memory
 SimpleMemory::SimpleMemory(const SimpleMemoryParams &p) :
     AbstractMemory(p),
     port(name() + ".port", *this), latency(p.latency),
-    latency_var(p.latency_var), bandwidth(p.bandwidth), isBusy(false),
-    retryReq(false), retryResp(false),
+    latency_var(p.latency_var), bandwidth(p.bandwidth), 
+    isBusy(false),retryReq(false), retryResp(false),
     releaseEvent([this]{ release(); }, name()),
     dequeueEvent([this]{ dequeue(); }, name())
 {
@@ -96,7 +96,7 @@ SimpleMemory::recvFunctional(PacketPtr pkt)
     pkt->pushLabel(name());
 
     functionalAccess(pkt);
-
+    
     bool done = false;
     auto p = packetQueue.begin();
     // potentially update the packets in our packet queue as well

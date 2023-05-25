@@ -54,7 +54,7 @@
 namespace gem5
 {
 
-namespace trace {
+namespace Trace {
 
 class TarmacContext;
 
@@ -258,7 +258,7 @@ class TarmacTracerRecord : public TarmacBaseRecord
     TarmacTracer& tracer;
 };
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5
 
 #endif // __ARCH_ARM_TRACERS_TARMAC_RECORD_HH__

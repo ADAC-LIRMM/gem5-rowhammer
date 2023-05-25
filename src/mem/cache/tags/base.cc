@@ -114,7 +114,7 @@ BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
     // Insert block with tag, src requestor id and task id
     blk->insert(extractTag(pkt->getAddr()), pkt->isSecure(), requestor_id,
                 pkt->req->taskId());
-
+    blk->_mmu_translation_info=pkt->req->_mmu_translation_info;
     // Check if cache warm up is done
     if (!warmedUp && stats.tagsInUse.value() >= warmupBound) {
         warmedUp = true;
@@ -203,9 +203,11 @@ BaseTags::print()
 {
     std::string str;
 
-    auto print_blk = [&str](CacheBlk &blk) {
+    auto print_blk = [&str,this](CacheBlk &blk) {
         if (blk.isValid())
-            str += csprintf("\tBlock: %s\n", blk.print());
+            str += csprintf("\tAddr: 0x%x, Block: %s\n",
+            indexingPolicy->regenerateAddr(blk.getTag(),&blk),
+             blk.print());
     };
     forEachBlk(print_blk);
 

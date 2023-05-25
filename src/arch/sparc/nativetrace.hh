@@ -37,7 +37,7 @@ namespace gem5
 
 class ThreadContext;
 
-namespace trace {
+namespace Trace {
 
 class SparcNativeTrace : public NativeTrace
 {
@@ -48,7 +48,7 @@ class SparcNativeTrace : public NativeTrace
     void check(NativeTraceRecord *record);
 };
 
-} // namespace trace
+} // namespace Trace
 } // namespace gem5
 
 #endif // __CPU_NATIVETRACE_HH__

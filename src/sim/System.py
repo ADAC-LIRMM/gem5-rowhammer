@@ -60,7 +60,10 @@ class System(SimObject):
     cxx_exports = [
         PyBindMethod("getMemoryMode"),
         PyBindMethod("setMemoryMode"),
+        PyBindMethod("setM5env"),
+        PyBindMethod("getM5env")
     ]
+
 
     memories = VectorParam.AbstractMemory(
         Self.all, "All memories in the system"
@@ -154,4 +157,14 @@ class System(SimObject):
         0,
         "Base of the 64KiB PA range used for "
         "memory-mapped m5ops. Set to 0 to disable.",
+    )
+
+    init_memory_content_pmems = VectorParam.String(
+        [],
+        ".pmem file paths to copy memory content from",
+    )
+
+    init_memory_content_storeIds = VectorParam.Int(
+        [],
+        "target storeIds to copy the memory content to",
     )

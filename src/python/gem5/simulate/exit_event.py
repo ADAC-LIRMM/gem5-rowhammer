@@ -42,7 +42,6 @@ class ExitEvent(Enum):
     SWITCHCPU = "switchcpu"  # An exit needed to switch CPU cores.
     FAIL = "fail"  # An exit because the simulation has failed.
     CHECKPOINT = "checkpoint"  # An exit to load a checkpoint.
-    SCHEDULED_TICK = "scheduled tick exit"
     MAX_TICK = "max tick"  # An exit due to a maximum tick value being met.
     USER_INTERRUPT = (  # An exit due to a user interrupt (e.g., cntr + c)
         "user interupt"
@@ -76,8 +75,6 @@ class ExitEvent(Enum):
             return ExitEvent.EXIT
         elif exit_string == "simulate() limit reached":
             return ExitEvent.MAX_TICK
-        elif exit_string == "Tick exit reached":
-            return ExitEvent.SCHEDULED_TICK
         elif exit_string == "switchcpu":
             return ExitEvent.SWITCHCPU
         elif exit_string == "m5_fail instruction encountered":
@@ -90,12 +87,6 @@ class ExitEvent(Enum):
             return ExitEvent.SIMPOINT_BEGIN
         elif exit_string == "a thread reached the max instruction count":
             return ExitEvent.MAX_INSTS
-        elif exit_string.endswith("will terminate the simulation.\n"):
-            # This is for the traffic generator exit event
-            return ExitEvent.EXIT
-        elif exit_string.endswith("is finished updating the memory.\n"):
-            # This is for the gups generator exit event
-            return ExitEvent.EXIT
         raise NotImplementedError(
             "Exit event '{}' not implemented".format(exit_string)
         )

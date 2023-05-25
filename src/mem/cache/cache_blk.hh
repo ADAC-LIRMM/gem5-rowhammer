@@ -108,6 +108,8 @@ class CacheBlk : public TaggedEntry
      */
     Tick whenReady = 0;
 
+    /* Information about the translation*/
+    std::string _mmu_translation_info;
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on
@@ -187,7 +189,7 @@ class CacheBlk : public TaggedEntry
         setRefCount(other.getRefCount());
         setSrcRequestorId(other.getSrcRequestorId());
         std::swap(lockList, other.lockList);
-
+        _mmu_translation_info=other._mmu_translation_info;
         other.invalidate();
 
         return *this;
@@ -399,9 +401,9 @@ class CacheBlk : public TaggedEntry
           default:    s = 'T'; break; // @TODO add other types
         }
         return csprintf("state: %x (%c) writable: %d readable: %d "
-            "dirty: %d prefetched: %d | %s", coherence, s,
+            "dirty: %d prefetched: %d | %s MMU_info:%s", coherence, s,
             isSet(WritableBit), isSet(ReadableBit), isSet(DirtyBit),
-            wasPrefetched(), TaggedEntry::print());
+            wasPrefetched(), TaggedEntry::print(),_mmu_translation_info.c_str());
     }
 
     /**

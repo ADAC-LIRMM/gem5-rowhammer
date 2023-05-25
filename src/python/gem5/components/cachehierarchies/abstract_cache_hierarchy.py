@@ -70,7 +70,3 @@ class AbstractCacheHierarchy(SubSystem):
         :returns: True if the cache hierarchy is ruby. Otherwise False.
         """
         raise NotImplementedError
-
-    def _post_instantiate(self):
-        """Called to set up anything needed after m5.instantiate"""
-        pass

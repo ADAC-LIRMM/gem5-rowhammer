@@ -488,12 +488,15 @@ TimingSimpleCPU::initiateMemRead(Addr addr, unsigned size,
 
         thread->mmu->translateTiming(req1, thread->getTC(), trans1, mode);
         thread->mmu->translateTiming(req2, thread->getTC(), trans2, mode);
+        checkMmuWatchList(req1, mode);checkMmuWatchList(req2, mode);
+        
     } else {
         WholeTranslationState *state =
             new WholeTranslationState(req, new uint8_t[size], NULL, mode);
         DataTranslation<TimingSimpleCPU *> *translation
             = new DataTranslation<TimingSimpleCPU *>(this, state);
         thread->mmu->translateTiming(req, thread->getTC(), translation, mode);
+        checkMmuWatchList(req, mode);
     }
 
     return NoFault;
@@ -573,12 +576,14 @@ TimingSimpleCPU::writeMem(uint8_t *data, unsigned size,
 
         thread->mmu->translateTiming(req1, thread->getTC(), trans1, mode);
         thread->mmu->translateTiming(req2, thread->getTC(), trans2, mode);
+        checkMmuWatchList(req1, mode);checkMmuWatchList(req2, mode);
     } else {
         WholeTranslationState *state =
             new WholeTranslationState(req, newData, res, mode);
         DataTranslation<TimingSimpleCPU *> *translation =
             new DataTranslation<TimingSimpleCPU *>(this, state);
         thread->mmu->translateTiming(req, thread->getTC(), translation, mode);
+        checkMmuWatchList(req, mode);
     }
 
     // Translation faults will be returned via finishTranslation()
@@ -629,7 +634,7 @@ TimingSimpleCPU::initiateMemAMO(Addr addr, unsigned size,
     DataTranslation<TimingSimpleCPU *> *translation
         = new DataTranslation<TimingSimpleCPU *>(this, state);
     thread->mmu->translateTiming(req, thread->getTC(), translation, mode);
-
+    checkMmuWatchList(req, mode);
     return NoFault;
 }
 
@@ -686,7 +691,8 @@ TimingSimpleCPU::fetch()
 
     if (!curStaticInst || !curStaticInst->isDelayedCommit()) {
         checkForInterrupts();
-        checkPcEventQueue();
+        //if(!curStaticInst->isMicroop() || curStaticInst->isFirstMicroop())
+            checkPcEventQueue();
     }
 
     // We must have just got suspended by a PC event

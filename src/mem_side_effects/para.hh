@@ -5,6 +5,12 @@
 #include "mem_side_effects/mitigation.hh"
 #include "params/PARA.hh"
 
+namespace gem5
+{
+
+namespace memory
+{
+
 class PARA : public Mitigation {
 private:
     float _p;
@@ -15,10 +21,15 @@ private:
     std::uniform_real_distribution<float> _rand_distr;
 
 public:
-    PARA(const PARAParams &params);
+    typedef PARAParams Params;
+    PARA(const Params &params);
 
     void onACT(MemoryCorruption& mem_corrupt,
                const std::vector<int>& addr_vec);
 };
+
+}
+
+}
 
 #endif // __PARA_HH__

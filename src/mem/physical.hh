@@ -296,6 +296,11 @@ class PhysicalMemory : public Serializable
      */
     void unserializeStore(CheckpointIn &cp);
 
+    /**
+     * Copies the content of the file in the section identified by store_id
+     */
+    void loadMemoryData(unsigned int store_id, std::string filepath);
+
 };
 
 } // namespace memory

@@ -1929,6 +1929,44 @@ MaxTick = Tick.max
 AllMemory = AddrRange(0, MaxAddr)
 
 
+class Dict(ParamValue):
+    cxx_type = "std::map<std::string, std::string>"
+    cmd_line_settable = True
+
+    def __init__(self, value):
+        self.value = {}
+
+    def __call__(self, value):
+        self.__init__(value)
+        return value
+
+    def __str__(self):
+        return str(self.value)
+
+    def getValue(self):
+        return self.value
+
+    def config_value(self):
+        return self.value
+    def __setitem__(self, key, value):
+        self.value[key] = value
+    def __getitem__(self, key, value):
+        return self.value[key]
+    @classmethod
+    def cxx_predecls(cls, code):
+        code('#include <map>')
+
+    @classmethod
+    def cxx_ini_predecls(cls, code):
+        # Assume that base/str.hh will be included anyway
+        # code('#include "base/str.hh"')
+        pass
+
+    @classmethod
+    def cxx_ini_parse(self, code, src, dest, ret):
+        code(f"{dest}[{src[0]}]={src[1]};")
+        code("%s true;" % ret)
+
 #####################################################################
 #
 # Port objects

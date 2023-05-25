@@ -73,6 +73,10 @@ arm_fs_long_tests = [
     "realview64-minor-dual",
     "realview64-switcheroo-o3",
     "realview64-switcheroo-full",
+    "realview-simple-timing-ruby",
+    "realview64-simple-timing-ruby",
+    "realview64-simple-timing-dual-ruby",
+    "realview64-o3-dual-ruby",
     # The following tests fail. These are recorded in the GEM5-640
     # Jira issue.
     #
@@ -82,14 +86,6 @@ arm_fs_long_tests = [
     #'realview-o3-dual',
     #'realview-minor-dual',
     #'realview-simple-timing-dual-ruby',
-]
-
-# These tests are Ruby-based and Ruby does not support multiple ISAs
-arm_fs_long_tests_arm_target = [
-    "realview-simple-timing-ruby",
-    "realview64-simple-timing-ruby",
-    "realview64-simple-timing-dual-ruby",
-    "realview64-o3-dual-ruby",
 ]
 
 tarball = "aarch-system-20220707.tar.bz2"
@@ -138,7 +134,7 @@ for name in arm_fs_quick_tests:
         verifiers=verifier_list(name),  # Add basic stat verifiers
         config=joinpath(filepath, "run.py"),
         config_args=args,
-        valid_isas=(constants.all_compiled_tag,),
+        valid_isas=(constants.arm_tag,),
         length=constants.quick_tag,
         valid_hosts=valid_hosts,
         fixtures=(arm_fs_binaries,),
@@ -146,23 +142,6 @@ for name in arm_fs_quick_tests:
     )
 
 for name in arm_fs_long_tests:
-    args = [
-        joinpath(config.base_dir, "tests", "gem5", "configs", name + ".py"),
-        path,
-        config.base_dir,
-    ]
-    gem5_verify_config(
-        name=name,
-        verifiers=verifier_list(name),  # TODO: Add basic stat verifiers
-        config=joinpath(filepath, "run.py"),
-        config_args=args,
-        valid_isas=(constants.all_compiled_tag,),
-        length=constants.long_tag,
-        fixtures=(arm_fs_binaries,),
-        uses_kvm=name in arm_fs_kvm_tests,
-    )
-
-for name in arm_fs_long_tests_arm_target:
     args = [
         joinpath(config.base_dir, "tests", "gem5", "configs", name + ".py"),
         path,
